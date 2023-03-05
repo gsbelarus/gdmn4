@@ -1,9 +1,12 @@
 import styled, { StyleSheetManager } from 'styled-components';
-import { Route, Routes, Link } from 'react-router-dom';
+import { Route, Routes, Link, BrowserRouter } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './store';
 import { Login } from './components/login/login';
 import { logOff } from './features/security/user';
 import { GlobalStyle } from './components/global-style';
+import { Profile } from './components/profile/Profile'
+
+const imageURL = "https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
 
 const StyledApp = styled.div`
   position: relative;
@@ -56,7 +59,7 @@ export const App = () => {
             {
               email ?
               <div>
-                Welcome {email}! <span onClick={ () => dispatch(logOff()) }>Logoff</span>  
+                Welcome {email}! <span onClick={ () => dispatch(logOff()) }>Logoff</span> <Link to="/profile">Profile</Link>
               </div>
               :
               null
@@ -68,6 +71,10 @@ export const App = () => {
           {
             email ?
               <>
+                  <Routes>
+                      <Route path='/profile' element={<Profile email={email} bio="" avatarUrl={imageURL}/>}/>
+                  </Routes>
+                
                 {/* <div role="navigation">
                   <ul>
                     <li>
@@ -99,7 +106,7 @@ export const App = () => {
                 </Routes> */}
               </>
             :
-              <Login />  
+              <Login />
           }
         </StyledApp>
       </>
