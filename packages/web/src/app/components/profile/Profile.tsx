@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import axios from 'axios';
 import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
+import "./profile.css"
+import { Link } from 'react-router-dom';
 
 const Container = styled.div`
   max-width: 800px;
@@ -42,19 +44,20 @@ interface Props {
 
 export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
 
-  const [companies, setCompanies] = useState([])
+  const [organizations, setOrganizations] = useState<Array<any>>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState("")
-  // useEffect(() => {
-  //   axios.get(`http://localhost:3000/getCompanies:${email}`).then(res => {
-  //   setCompanies(res.data)
-  //   setLoading(false)
-  //   })
-  // }, [])
+  useEffect(() => {
+    axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
+    setOrganizations(res.data.organizations)
+    setLoading(false)
+    })
+  }, [])
   const createOrganization = () => {
     axios.post("http://localhost:3000/createOrganization", {name: name, email: email}).then(res => 
     {console.log(res.data.message)
       setName("")
+      setOrganizations(res.data.organizations)
   })
   }
 
@@ -74,23 +77,28 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
       <div className='table'>
         {
           loading? "" : 
-          <table>
-            <tr>
-              <th>Company</th>
-              <th>Role</th>
-            </tr>
-            {/* {
-              companies.map(company => (
-                <tr>
-                  <th>
-                    {company.name}
-                  </th>
-                  <th>
-                    {company.role}
-                  </th>
-                </tr>
-              ))
-            } */}
+          <table className='scrollTable'>
+            <thead className='fixedHeader'>
+              <tr>
+                <th>Company</th>
+                <th>Role</th>
+              </tr>
+            </thead>
+            <tbody className='scrollContent'>
+              {
+                organizations.map(org => (
+                  <tr>
+                    <th>
+                      {org.role === "admin"? <Link to="/zaglushka">{org.organization[0].name}</Link>: org.organization[0].name}
+                    </th>
+                    <th>
+                      {org.role}
+                    </th>
+                  </tr>
+                ))
+              }
+            </tbody>
+            
           </table>
         }
       </div>

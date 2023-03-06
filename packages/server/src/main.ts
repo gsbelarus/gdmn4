@@ -163,13 +163,42 @@ router.post("/createOrganization", async (ctx) => {
   const user = await User.findOne({email: email})
   const saved = await organization.save()
   const membership = new Membership({
-    user_id: user._id, 
-    organization_id: saved._id, 
+    user: user._id, 
+    organization: saved._id, 
     role: "admin"
   })
   await membership.save()
+  const organizations = await Membership.aggregate([
+    { $match: { user: user._id } },
+    { $lookup: {
+        from: "organizations",
+        localField: "organization",
+        foreignField: "_id",
+        as: "organization"
+    } },
+  ])
+
   ctx.response.body = {
-    message: "Created new organization and membership!",
+    organizations: organizations
+  }
+})
+
+router.post("/getOrganizations", async (ctx) => {
+  const email = ctx.request.body.email
+  const user = await User.findOne({email: email})
+  const id = user._id
+  const organizations = await Membership.aggregate([
+    { $match: { user: id } },
+    { $lookup: {
+        from: "organizations",
+        localField: "organization",
+        foreignField: "_id",
+        as: "organization"
+    } },
+])
+
+  ctx.response.body = {
+    organizations: organizations
   }
 })
 

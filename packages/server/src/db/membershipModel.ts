@@ -1,26 +1,25 @@
 import { Schema, model, ObjectId } from 'mongoose';
 
+
 interface IMembership {
-  user_id: ObjectId;
-  organization_id: ObjectId;
+  user: ObjectId;
+  organization: ObjectId;
   role: string
 };
 
-const IMembership = new Schema<IMembership>({
-    user_id: { 
+const membershipSchema = new Schema<IMembership>({
+    user: { 
     type: Schema.Types.ObjectId, 
-    required: true,
-    unique: true,
+    ref: 'User',
   },
-  organization_id: { 
+  organization: { 
     type: Schema.Types.ObjectId, 
-    required: true,
-    unique: true,
+    ref: 'Organization',
   }, 
   role: {
     type: String, 
     required: true
   }
-});
+}, {autoIndex: false});
 
-export const Membership = model<IMembership>('Membership', IMembership);
+export const Membership = model<IMembership>('Membership', membershipSchema);
