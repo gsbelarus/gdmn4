@@ -4,6 +4,8 @@ import bodyParser from 'koa-bodyparser';
 import Router from 'koa-router';
 import { hashSync, compareSync } from 'bcryptjs';
 import { User } from './db/userModel';
+import { Organization } from './db/organizationModel';
+import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
 import { LoginRequest, RegisterRequest, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
@@ -154,6 +156,22 @@ router
       message: `restricted access. user: ${ctx.request.user.userEmail}`
     };
   });
+
+router.post("/createOrganization", async (ctx) => {
+  const organization = new Organization({name: ctx.request.body.name})
+  const email = ctx.request.body.email
+  const user = await User.findOne({email: email})
+  const saved = await organization.save()
+  const membership = new Membership({
+    user_id: user._id, 
+    organization_id: saved._id, 
+    role: "admin"
+  })
+  await membership.save()
+  ctx.response.body = {
+    message: "Created new organization and membership!",
+  }
+})
 
 app
   .use(router.routes())

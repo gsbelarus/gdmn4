@@ -1,4 +1,8 @@
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
+import InputUnstyled from '@mui/base/InputUnstyled';
+import { Button } from '../controls/button';
 
 const Container = styled.div`
   max-width: 800px;
@@ -23,6 +27,13 @@ const Bio = styled.p`
   font-size: 1.2rem;
 `;
 
+const Input = styled(InputUnstyled)`
+  .MuiInput-input {
+    border-radius: 4px;
+    width: 20%;
+  }
+`;
+
 interface Props {
   email: string;
   bio: string;
@@ -30,11 +41,60 @@ interface Props {
 }
 
 export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
+
+  const [companies, setCompanies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [name, setName] = useState("")
+  // useEffect(() => {
+  //   axios.get(`http://localhost:3000/getCompanies:${email}`).then(res => {
+  //   setCompanies(res.data)
+  //   setLoading(false)
+  //   })
+  // }, [])
+  const createOrganization = () => {
+    axios.post("http://localhost:3000/createOrganization", {name: name, email: email}).then(res => 
+    {console.log(res.data.message)
+      setName("")
+  })
+  }
+
   return (
-    <Container>
+    <>
+      <Container>
       <Avatar src={avatarUrl} />
       <Email>{email}</Email>
       <Bio>This is a user</Bio>
-    </Container>
+      </Container>
+      <div className='orgCreate'>
+        <span>Enter organization name</span>
+        <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
+        <Button onClick={createOrganization}>Create</Button>
+      </div>
+      <span>{name}</span>
+      <div className='table'>
+        {
+          loading? "" : 
+          <table>
+            <tr>
+              <th>Company</th>
+              <th>Role</th>
+            </tr>
+            {/* {
+              companies.map(company => (
+                <tr>
+                  <th>
+                    {company.name}
+                  </th>
+                  <th>
+                    {company.role}
+                  </th>
+                </tr>
+              ))
+            } */}
+          </table>
+        }
+      </div>
+    </>
+    
   );
 };
