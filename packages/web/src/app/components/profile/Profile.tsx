@@ -47,6 +47,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
 
   const [organizations, setOrganizations] = useState<Array<any>>([])
   const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState(false)
   const [name, setName] = useState("")
   const navigate = useNavigate()
 
@@ -62,11 +63,16 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
     {console.log(res.data.message)
       setName("")
       setOrganizations(res.data.organizations)
-  })
+      setErr(false)
+  }).catch(() => setErr(true))
   }
 
   const deleteProfile = () => {
     axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => navigate("/"))
+  }
+
+  const leaveOrganization = (org: string) => {
+    axios.post("http://localhost:3000/leaveOrg", {user: email, org: org}).then(res => setOrganizations(res.data.organizations))
   }
 
   return (
@@ -81,17 +87,21 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
         <div className='orgCreate'>
           <span>Enter organization name</span>
           <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
+          {
+            err? <span className='error'>Organization already exists!</span> : ""
+          }
           <Button onClick={createOrganization}>Create</Button>
         </div>
       </div>
       <div className='table'>
         {
           loading? "" : 
-          <table className='scrollTable'>
+          <table className='scrollTable1'>
             <thead className='fixedHeader'>
               <tr>
-                <th>Company</th>
+                <th>Organization</th>
                 <th>Role</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody className='scrollContent'>
@@ -103,6 +113,9 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
                     </td>
                     <td>
                       {org.role}
+                    </td>
+                    <td>
+                      <button onClick={() => leaveOrganization(org.organization[0]._id)}>Leave</button>
                     </td>
                   </tr>
                 ))

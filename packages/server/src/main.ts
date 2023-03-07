@@ -159,29 +159,38 @@ router
   });
 
 router.post("/createOrganization", async (ctx) => {
-  const organization = new Organization({name: ctx.request.body.name})
   const email = ctx.request.body.email
   const user = await User.findOne({email: email})
-  const saved = await organization.save()
-  const membership = new Membership({
-    user: user._id, 
-    organization: saved._id, 
-    role: "admin"
-  })
-  await membership.save()
-  const organizations = await Membership.aggregate([
-    { $match: { user: user._id } },
-    { $lookup: {
-        from: "organizations",
-        localField: "organization",
-        foreignField: "_id",
-        as: "organization"
-    } },
-  ])
 
-  ctx.response.body = {
-    organizations: organizations
+  try{
+    const organization = new Organization({name: ctx.request.body.name})
+    const saved = await organization.save()
+    const membership = new Membership({
+      user: user._id, 
+      organization: saved._id, 
+      role: "admin"
+    })
+    await membership.save()
+    const organizations = await Membership.aggregate([
+      { $match: { user: user._id } },
+      { $lookup: {
+          from: "organizations",
+          localField: "organization",
+          foreignField: "_id",
+          as: "organization"
+      } },
+    ])
+  
+    ctx.response.body = {
+      organizations: organizations
+    }
   }
+  catch(error){
+    ctx.response.status = 500
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+  }
+  
+  
 })
 
 router.post("/getOrganizations", async (ctx) => {
@@ -242,6 +251,14 @@ router.get("/deleteMembership", async (ctx) => {
         foreignField: "_id",
         as: "user"
       }
+    },
+    {
+      $lookup: {
+        from: "organizations",
+        localField: "organization",
+        foreignField: "_id",
+        as: "organization"
+      }
     }
   ])
   ctx.response.body = {
@@ -250,30 +267,46 @@ router.get("/deleteMembership", async (ctx) => {
 })
 
 router.post("/addMembership", async (ctx) => {
-  const user = await User.findOne({email: ctx.request.body.email})
-  const user_id = user._id
-  const org_id = new mongoose.Types.ObjectId(ctx.query.org)
-  const membership = new Membership({
-    user: user_id,
-    organization: org_id,
-    role: ctx.request.body.role
-  })
-
-  await membership.save()
-  const users = await Membership.aggregate([
-    {$match: {organization: org_id}},
-    {
-      $lookup: {
-        from: "users",
-        localField: "user",
-        foreignField: "_id",
-        as: "user"
+  try{
+    const user = await User.findOne({email: ctx.request.body.email})
+    const user_id = user._id
+    const org_id = new mongoose.Types.ObjectId(ctx.query.org)
+    await Membership.findOneAndDelete({user: user_id, organization: org_id})
+    const membership = new Membership({
+      user: user_id,
+      organization: org_id,
+      role: ctx.request.body.role
+    })
+    
+    await membership.save()
+    const users = await Membership.aggregate([
+      {$match: {organization: org_id}},
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      {
+        $lookup: {
+          from: "organizations",
+          localField: "organization",
+          foreignField: "_id",
+          as: "organization"
+        }
       }
+    ])
+    ctx.response.body = {
+      users: users
     }
-  ])
-  ctx.response.body = {
-    users: users
   }
+  catch(error){
+    ctx.status = 500
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+  }
+  
 })
 
 router.post("/updateMembership", async (ctx) => {
@@ -290,6 +323,14 @@ router.post("/updateMembership", async (ctx) => {
         foreignField: "_id",
         as: "user"
       }
+    },
+    {
+      $lookup: {
+        from: "organizations",
+        localField: "organization",
+        foreignField: "_id",
+        as: "organization"
+      }
     }
   ])
   ctx.response.body = {
@@ -301,6 +342,24 @@ router.get("/deleteProfile", async (ctx) => {
   await User.findOneAndDelete({email: ctx.query.email})
   ctx.response.body = {
     message: "Success!"
+  }
+})
+
+router.post("/leaveOrg", async (ctx) => {
+  const user = await User.findOne({email: ctx.request.body.user})
+  await Membership.deleteOne({user: user._id, organization: new mongoose.Types.ObjectId(ctx.request.body.org)})
+  const organizations = await Membership.aggregate([
+    { $match: { user: user._id } },
+    { $lookup: {
+        from: "organizations",
+        localField: "organization",
+        foreignField: "_id",
+        as: "organization"
+    } },
+])
+
+  ctx.response.body = {
+    organizations: organizations
   }
 })
 

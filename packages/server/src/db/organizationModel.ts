@@ -13,7 +13,7 @@ const organizationSchema = new Schema<IOrganization>({
     lowercase: true
   },
 }).post('findOneAndDelete', async (document) => {
-  await Membership.deleteMany({user: document._id})
+  await Membership.deleteMany({organization: document._id})
 });
 
 export const Organization = model<IOrganization>('Organization', organizationSchema);

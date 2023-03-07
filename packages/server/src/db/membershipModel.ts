@@ -11,6 +11,7 @@ const membershipSchema = new Schema<IMembership>({
   user: { 
     type: Schema.Types.ObjectId, 
     ref: 'User',
+    unique: true
   },
   organization: { 
     type: Schema.Types.ObjectId, 

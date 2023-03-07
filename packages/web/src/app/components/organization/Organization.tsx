@@ -13,15 +13,20 @@ interface IUser {
 export const Organization = () => {
 
   const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoaded] = useState(true)
+  const [err, setErr] = useState(false)
   const [newUser, setNewUser] = useState<IUser>({
-    email: "", role: ""
+    email: "", role: "user"
   })
 
   const location = useLocation()
   const id = location.pathname.split("/")[2]
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {setUsers(res.data.users)})
+    axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {
+        setUsers(res.data.users)
+        setLoaded(false)
+    })
   }, [])
 
   const handleRoleChange = (user: number, newRole: string) => {
@@ -33,13 +38,18 @@ export const Organization = () => {
   };
 
   const handleUserAdd = () => {
-    axios.post(`http://localhost:3000/addMembership?org=${id}`, newUser).then(res => setUsers(res.data.users))
+    axios.post(`http://localhost:3000/addMembership?org=${id}`, newUser).then(res => {
+        setUsers(res.data.users)
+        setErr(false)
+    }).catch(() => setErr(true))
   };
 
   return (
     <div className="organizationInfo">
-      <h1>Organization: {users[0].organization[0].name}</h1>
-      <table className="scrollTable">
+      {loading? "" :
+      <>
+        <h1>Organization: {users[0].organization[0].name}</h1>
+        <table className="scrollTable2">
         <thead>
           <tr>
             <th>Email</th>
@@ -66,8 +76,8 @@ export const Organization = () => {
             </tr>
           ))}
         </tbody>
-      </table>
-      <div className="addForm">
+        </table>
+        <div className="addForm">
         <input type="text" name="email" placeholder="Email" required onChange={e => setNewUser(prev => {
                 return {
                     ...prev, email: e.target.value
@@ -83,7 +93,12 @@ export const Organization = () => {
             <option value="user">User</option>
             </select>
             <button onClick={handleUserAdd}>Add user</button>
-      </div>
+        </div>
+        {
+            err? <span className='error'>User with this email doesn't exist!</span> : ""
+          }
+        </>
+      }
         
     </div>
   );
