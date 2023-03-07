@@ -5,6 +5,8 @@ import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
 import "./profile.css"
 import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '../../store';
+import { logOff } from '../../features/security/user';
 
 const Container = styled.div`
   max-width: 800px;
@@ -50,6 +52,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   const [err, setErr] = useState(false)
   const [name, setName] = useState("")
   const navigate = useNavigate()
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
@@ -68,7 +71,10 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   }
 
   const deleteProfile = () => {
-    axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => navigate("/"))
+    axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => {
+      dispatch(logOff())
+      navigate("/")
+    })
   }
 
   const leaveOrganization = (org: string) => {
