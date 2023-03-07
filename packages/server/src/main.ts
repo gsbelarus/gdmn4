@@ -214,6 +214,14 @@ router.get("/getUsers", async (ctx) => {
         foreignField: "_id",
         as: "user"
       }
+    },
+    {
+      $lookup: {
+        from: "organizations",
+        localField: "organization",
+        foreignField: "_id",
+        as: "organization"
+      }
     }
   ])
   ctx.response.body = {

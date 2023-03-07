@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { string } from "zod";
+import "./organization.css"
 
 interface IUser {
     email: string;
@@ -20,7 +21,7 @@ export const Organization = () => {
   const id = location.pathname.split("/")[2]
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => setUsers(res.data.users))
+    axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {setUsers(res.data.users)})
   }, [])
 
   const handleRoleChange = (user: number, newRole: string) => {
@@ -36,9 +37,9 @@ export const Organization = () => {
   };
 
   return (
-    <div>
-      <h1>Users</h1>
-      <table>
+    <div className="organizationInfo">
+      <h1>Organization: {users[0].organization[0].name}</h1>
+      <table className="scrollTable">
         <thead>
           <tr>
             <th>Email</th>
@@ -66,21 +67,24 @@ export const Organization = () => {
           ))}
         </tbody>
       </table>
+      <div className="addForm">
         <input type="text" name="email" placeholder="Email" required onChange={e => setNewUser(prev => {
-            return {
-                ...prev, email: e.target.value
-            }
-        })} />
-        <select onChange={e => setNewUser(prev => {
-            return {
-                ...prev, role: e.target.value
-            }
-        })} name="role" required>
-          <option value="">Select role</option>
-          <option value="admin">Admin</option>
-          <option value="user">User</option>
-        </select>
-        <button onClick={handleUserAdd}>Add user</button>
+                return {
+                    ...prev, email: e.target.value
+                }
+            })} />
+            <select onChange={e => setNewUser(prev => {
+                return {
+                    ...prev, role: e.target.value
+                }
+            })} name="role" required>
+            <option value="">Select role</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+            </select>
+            <button onClick={handleUserAdd}>Add user</button>
+      </div>
+        
     </div>
   );
 };

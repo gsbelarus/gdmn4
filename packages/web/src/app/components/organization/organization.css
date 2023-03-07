@@ -1,0 +1,40 @@
+.scrollTable {
+	font-family: Arial, Helvetica, sans-serif;
+	border-collapse: collapse;
+	width: 50%;
+  }
+  
+  .scrollTable td, .scrollTable th {
+	border: 1px solid #ddd;
+	padding: 8px;
+  }
+
+  .scrollTable th {
+	width: 200px;
+  }
+  
+  .scrollTable tr:nth-child(even){background-color: #f2f2f2;}
+  
+  .scrollTable tr:hover {background-color: #ddd;}
+  
+  .scrollTable th {
+	padding-top: 12px;
+	padding-bottom: 12px;
+	text-align: left;
+	background-color: brown;
+	color: white;
+  }
+
+table {
+	margin-top: 50px;
+}
+
+.addForm {
+    margin-top: 30px;
+    display: flex;
+    column-gap: 10px;
+}
+
+.organizationInfo {
+    margin-left: 50px;
+}
