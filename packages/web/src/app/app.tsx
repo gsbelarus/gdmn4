@@ -1,10 +1,11 @@
 import styled, { StyleSheetManager } from 'styled-components';
-import { Route, Routes, Link, BrowserRouter } from 'react-router-dom';
+import { Route, Routes, Link, BrowserRouter, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './store';
 import { Login } from './components/login/login';
 import { logOff } from './features/security/user';
 import { GlobalStyle } from './components/global-style';
 import { Profile } from './components/profile/Profile'
+import { Organization } from './components/organization/Organization';
 
 const imageURL = "https://png.pngtree.com/png-vector/20190710/ourmid/pngtree-user-vector-avatar-png-image_1541962.jpg"
 
@@ -48,6 +49,11 @@ export const App = () => {
   const { email } = useAppSelector( state => state.user );
   const { messages } = useAppSelector( state => state.log );
   const dispatch = useAppDispatch();
+  const navigate = useNavigate()
+  const handleLogoff = () => {
+    dispatch(logOff())
+    navigate("/")
+  }
 
   return (
     <StyleSheetManager disableVendorPrefixes={true}>
@@ -59,7 +65,7 @@ export const App = () => {
             {
               email ?
               <div>
-                Welcome {email}! <span onClick={ () => dispatch(logOff()) }>Logoff</span> <Link to="/profile">Profile</Link>
+                Welcome {email}! <span onClick={ handleLogoff }>Logoff</span> <Link to="/profile">Profile</Link>
               </div>
               :
               null
@@ -73,6 +79,7 @@ export const App = () => {
               <>
                   <Routes>
                       <Route path='/profile' element={<Profile email={email} bio="" avatarUrl={imageURL}/>}/>
+                      <Route path='/organization/:id' element={<Organization/>}/>
                   </Routes>
                 
                 {/* <div role="navigation">

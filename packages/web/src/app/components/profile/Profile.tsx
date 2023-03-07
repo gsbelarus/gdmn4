@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 const Container = styled.div`
   max-width: 800px;
   margin-left: 50px;
+  box-shadow: 5px 10px #888888
 `;
 
 const Avatar = styled.img`
@@ -32,7 +33,7 @@ const Bio = styled.p`
 const Input = styled(InputUnstyled)`
   .MuiInput-input {
     border-radius: 4px;
-    width: 20%;
+    width: 100%;
   }
 `;
 
@@ -62,18 +63,19 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   }
 
   return (
-    <>
-      <Container>
-      <Avatar src={avatarUrl} />
-      <Email>{email}</Email>
-      <Bio>This is a user</Bio>
-      </Container>
-      <div className='orgCreate'>
-        <span>Enter organization name</span>
-        <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
-        <Button onClick={createOrganization}>Create</Button>
+    <div className='profilePage'>
+      <div>
+        <Container>
+        <Avatar src={avatarUrl} />
+        <Email>{email}</Email>
+        <Bio>This is a user</Bio>
+        </Container>
+        <div className='orgCreate'>
+          <span>Enter organization name</span>
+          <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
+          <Button onClick={createOrganization}>Create</Button>
+        </div>
       </div>
-      <span>{name}</span>
       <div className='table'>
         {
           loading? "" : 
@@ -88,12 +90,12 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
               {
                 organizations.map(org => (
                   <tr>
-                    <th>
-                      {org.role === "admin"? <Link to="/zaglushka">{org.organization[0].name}</Link>: org.organization[0].name}
-                    </th>
-                    <th>
+                    <td>
+                      {org.role === "admin"? <Link to={`/organization/${org.organization[0]._id}`}>{org.organization[0].name}</Link>: org.organization[0].name}
+                    </td>
+                    <td>
                       {org.role}
-                    </th>
+                    </td>
                   </tr>
                 ))
               }
@@ -102,7 +104,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
           </table>
         }
       </div>
-    </>
+    </div>
     
   );
 };

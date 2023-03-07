@@ -9,6 +9,7 @@ import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
 import { LoginRequest, RegisterRequest, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
+import mongoose from 'mongoose';
 
 dbConnect();
 
@@ -199,6 +200,92 @@ router.post("/getOrganizations", async (ctx) => {
 
   ctx.response.body = {
     organizations: organizations
+  }
+})
+
+router.get("/getUsers", async (ctx) => {
+  const org = new mongoose.Types.ObjectId(ctx.query.org)
+  const users = await Membership.aggregate([
+    {$match: {organization: org}},
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }
+  ])
+  ctx.response.body = {
+    users: users
+  }
+})
+
+router.get("/deleteMembership", async (ctx) => {
+  const user_id = new mongoose.Types.ObjectId(ctx.query.user)
+  const org_id = new mongoose.Types.ObjectId(ctx.query.org)
+  await Membership.deleteOne({user: user_id, organization: org_id})
+  const users = await Membership.aggregate([
+    {$match: {organization: org_id}},
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }
+  ])
+  ctx.response.body = {
+    users: users
+  }
+})
+
+router.post("/addMembership", async (ctx) => {
+  const user = await User.findOne({email: ctx.request.body.email})
+  const user_id = user._id
+  const org_id = new mongoose.Types.ObjectId(ctx.query.org)
+  const membership = new Membership({
+    user: user_id,
+    organization: org_id,
+    role: ctx.request.body.role
+  })
+
+  await membership.save()
+  const users = await Membership.aggregate([
+    {$match: {organization: org_id}},
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }
+  ])
+  ctx.response.body = {
+    users: users
+  }
+})
+
+router.post("/updateMembership", async (ctx) => {
+  await Membership.updateOne({user: new mongoose.Types.ObjectId(ctx.request.body.user), 
+  organization: new mongoose.Types.ObjectId(ctx.request.body.org)}, {role: ctx.request.body.role}
+  )
+
+  const users = await Membership.aggregate([
+    {$match: {organization: new mongoose.Types.ObjectId(ctx.request.body.org)}},
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    }
+  ])
+  ctx.response.body = {
+    users: users
   }
 })
 

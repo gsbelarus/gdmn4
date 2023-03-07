@@ -8,7 +8,7 @@ interface IMembership {
 };
 
 const membershipSchema = new Schema<IMembership>({
-    user: { 
+  user: { 
     type: Schema.Types.ObjectId, 
     ref: 'User',
   },
