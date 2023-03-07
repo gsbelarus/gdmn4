@@ -289,6 +289,13 @@ router.post("/updateMembership", async (ctx) => {
   }
 })
 
+router.get("/deleteProfile", async (ctx) => {
+  await User.findOneAndDelete({email: ctx.query.email})
+  ctx.response.body = {
+    message: "Success!"
+  }
+})
+
 app
   .use(router.routes())
   .use(router.allowedMethods());

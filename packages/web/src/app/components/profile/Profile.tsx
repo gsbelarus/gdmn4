@@ -4,7 +4,7 @@ import axios from 'axios';
 import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
 import "./profile.css"
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   max-width: 800px;
@@ -48,18 +48,25 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   const [organizations, setOrganizations] = useState<Array<any>>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState("")
+  const navigate = useNavigate()
+
   useEffect(() => {
     axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
     setOrganizations(res.data.organizations)
     setLoading(false)
     })
   }, [])
+
   const createOrganization = () => {
     axios.post("http://localhost:3000/createOrganization", {name: name, email: email}).then(res => 
     {console.log(res.data.message)
       setName("")
       setOrganizations(res.data.organizations)
   })
+  }
+
+  const deleteProfile = () => {
+    axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => navigate("/"))
   }
 
   return (
@@ -69,6 +76,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
         <Avatar src={avatarUrl} />
         <Email>{email}</Email>
         <Bio>This is a user</Bio>
+        <Button onClick={deleteProfile}>Delete profile!</Button>
         </Container>
         <div className='orgCreate'>
           <span>Enter organization name</span>
