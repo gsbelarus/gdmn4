@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
 import "./profile.css"
@@ -55,10 +54,25 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
-    setOrganizations(res.data.organizations)
-    setLoading(false)
-    });
+    // axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
+    // setOrganizations(res.data.organizations)
+    // setLoading(false)
+    // });
+    fetch(`http://localhost:3000/getOrganizations`, {
+      method: 'POST',
+      body: JSON.stringify({email: email}),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json()
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
+      setOrganizations(data.organizations)
+      setLoading(false)
+    }).catch(err => console.log(err.message))
   }, [email]);
 
   const createOrganization = () => {
@@ -81,14 +95,43 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
 };
 
   const deleteProfile = () => {
-    axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => {
+    // axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => {
+    //   dispatch(logOff())
+    //   navigate("/")
+    // });
+    fetch(`http://localhost:3000/deleteProfile?email=${email}`, {
+      method: 'GET',
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json()
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
       dispatch(logOff())
       navigate("/")
-    });
+    }).catch(err => console.log(err.message))
+
   }
 
   const leaveOrganization = (org: string) => {
-    axios.post("http://localhost:3000/leaveOrg", {user: email, org: org}).then(res => setOrganizations(res.data.organizations));
+    // axios.post("http://localhost:3000/leaveOrg", {user: email, org: org}).then(res => setOrganizations(res.data.organizations));
+    fetch(`http://localhost:3000/leaveOrg`, {
+      method: 'POST',
+      body: JSON.stringify({user: email, org: org}),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json()
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
+      setOrganizations(data.organizations)
+    }).catch(err => console.log(err.message))
   }
 
   return (

@@ -1,7 +1,5 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { string } from "zod";
 import "./organization.css"
 
 interface IUser {
@@ -23,18 +21,59 @@ export const Organization = () => {
   const id = location.pathname.split("/")[2];
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {
-        setUsers(res.data.users)
-        setLoaded(false)
-    })
+    // axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {
+    //     setUsers(res.data.users)
+    //     setLoaded(false)
+    // });
+    fetch(`http://localhost:3000/getUsers?org=${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json();
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
+      setUsers(data.users);
+      setLoaded(false);
+    }).catch(err => console.log(err.message));
   }, [id]);
 
   const handleRoleChange = (user: number, newRole: string) => {
-    axios.post("http://localhost:3000/updateMembership", {user: user, role: newRole, org: id}).then(res => setUsers(res.data.users))
+    // axios.post("http://localhost:3000/updateMembership", {user: user, role: newRole, org: id}).then(res => setUsers(res.data.users))
+    fetch(`http://localhost:3000/updateMembership`, {
+      method: 'POST',
+      body: JSON.stringify({user: user, role: newRole, org: id}),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json();
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
+      setUsers(data.users);
+    }).catch(err => console.log(err.message));
   };
 
   const handleUserRemove = (user: number) => {
-    axios.get(`http://localhost:3000/deleteMembership?user=${user}&org=${id}`).then(res => setUsers(res.data.users))
+    // axios.get(`http://localhost:3000/deleteMembership?user=${user}&org=${id}`).then(res => setUsers(res.data.users))
+    fetch(`http://localhost:3000/deleteMembership?user=${user}&org=${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json();
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
+      setUsers(data.users);
+    }).catch(err => console.log(err.message));
   };
 
   const handleUserAdd = () => {
@@ -46,13 +85,13 @@ export const Organization = () => {
       }
     }).then(res => {
       if(res.ok) {
-        return res.json()
+        return res.json();
       }
       return res.text().then(text => {throw new Error(JSON.parse(text).message)});
     }).then(data => {
-      setUsers(data.users)
-      setErr("")
-    }).catch(err => setErr(err.message))
+      setUsers(data.users);
+      setErr("");
+    }).catch(err => setErr(err.message));
   };
 
   return (

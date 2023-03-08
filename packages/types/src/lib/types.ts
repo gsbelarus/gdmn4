@@ -47,13 +47,33 @@ export const LoginResponse = z.object({
 
 export type TLoginResponse = z.infer<typeof LoginResponse>;
 
-export const CreateMembershipRequest = z.object({
+export const EmailRequest = z.object({
   email: z.string().email()
 })
 
 export const CreateOrganizationRequest = z.object({
   email: z.string().email(),
   name: z.string()
+})
+
+export const LeaveOrganizationRequest = z.object({
+  user: z.string().email(),
+  org: z.string()
+})
+
+export const DeleteMemberRequest = z.object({
+  user: z.string(),
+  org: z.string()
+})
+
+export const getMembers = z.object({
+  org: z.string()
+})
+
+export const RoleChange = z.object({
+  user: z.string(),
+  role: z.string(),
+  org: z.string()
 })
 
 export function types(): string {
