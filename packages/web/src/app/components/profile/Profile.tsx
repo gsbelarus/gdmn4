@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
-import "./profile.css"
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store';
 import { logOff } from '../../features/security/user';
+import { Table } from '../table/table';
 
 const Container = styled.div`
   max-width: 800px;
@@ -38,6 +38,23 @@ const Input = styled(InputUnstyled)`
   }
 `;
 
+const Page = styled.div`
+  display: flex;
+  align-items: stretch;
+  margin-left: 50px;
+`;
+
+const Create = styled.div`
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 5px;
+`;
+
+const ErrorSpan = styled.span`
+  color: red;
+`;
+
 interface Props {
   email: string;
   bio: string;
@@ -54,10 +71,6 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
-    // setOrganizations(res.data.organizations)
-    // setLoading(false)
-    // });
     fetch(`http://localhost:3000/getOrganizations`, {
       method: 'POST',
       body: JSON.stringify({email: email}),
@@ -66,12 +79,12 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
       }
     }).then(res => {
       if(res.ok) {
-        return res.json()
+        return res.json();
       }
       return res.text().then(text => {throw new Error(JSON.parse(text).message)});
     }).then(data => {
-      setOrganizations(data.organizations)
-      setLoading(false)
+      setOrganizations(data.organizations);
+      setLoading(false);
     }).catch(err => console.log(err.message))
   }, [email]);
 
@@ -84,21 +97,17 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
       }
     }).then(res => {
       if(res.ok) {
-        return res.json()
+        return res.json();
       }
       return res.text().then(text => {throw new Error(JSON.parse(text).message)});
     }).then(data => {
-      setName("")
-      setOrganizations(data.organizations)
-      setErr("")
-    }).catch(err => setErr(err.message))
+      setName("");
+      setOrganizations(data.organizations);
+      setErr("");
+    }).catch(err => setErr(err.message));
 };
 
   const deleteProfile = () => {
-    // axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => {
-    //   dispatch(logOff())
-    //   navigate("/")
-    // });
     fetch(`http://localhost:3000/deleteProfile?email=${email}`, {
       method: 'GET',
       headers: {
@@ -110,14 +119,13 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
       }
       return res.text().then(text => {throw new Error(JSON.parse(text).message)});
     }).then(data => {
-      dispatch(logOff())
-      navigate("/")
-    }).catch(err => console.log(err.message))
+      dispatch(logOff());
+      navigate("/");
+    }).catch(err => console.log(err.message));
 
   }
 
   const leaveOrganization = (org: string) => {
-    // axios.post("http://localhost:3000/leaveOrg", {user: email, org: org}).then(res => setOrganizations(res.data.organizations));
     fetch(`http://localhost:3000/leaveOrg`, {
       method: 'POST',
       body: JSON.stringify({user: email, org: org}),
@@ -126,16 +134,16 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
       }
     }).then(res => {
       if(res.ok) {
-        return res.json()
+        return res.json();
       }
       return res.text().then(text => {throw new Error(JSON.parse(text).message)});
     }).then(data => {
-      setOrganizations(data.organizations)
-    }).catch(err => console.log(err.message))
+      setOrganizations(data.organizations);
+    }).catch(err => console.log(err.message));
   }
 
   return (
-    <div className='profilePage'>
+    <Page>
       <div>
         <Container>
         <Avatar src={avatarUrl} />
@@ -143,46 +151,44 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
         <Bio>This is a user</Bio>
         <Button onClick={deleteProfile}>Delete profile!</Button>
         </Container>
-        <div className='orgCreate'>
+        <Create>
           <span>Enter organization name</span>
           <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
-          <span className='error'>{err}</span>
+          <ErrorSpan className='error'>{err}</ErrorSpan>
           <Button onClick={createOrganization}>Create</Button>
-        </div>
+        </Create>
       </div>
-      <div className='table'>
+      <div>
         {
           loading? "" : 
-          <table className='scrollTable1'>
-            <thead className='fixedHeader'>
-              <tr>
-                <th>Organization</th>
-                <th>Role</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody className='scrollContent'>
+          <Table>
+            <Table.Head>
+              <Table.TR>
+                <Table.TH>Organization</Table.TH>
+                <Table.TH>Role</Table.TH>
+                <Table.TH>Action</Table.TH>
+              </Table.TR>
+            </Table.Head>
+            <Table.Body>
               {
                 organizations.map(org => (
-                  <tr>
-                    <td>
+                  <Table.TR>
+                    <Table.TD>
                       {org.role === "admin"? <Link to={`/organization/${org.organization[0]._id}`}>{org.organization[0].name}</Link>: org.organization[0].name}
-                    </td>
-                    <td>
+                    </Table.TD>
+                    <Table.TD>
                       {org.role}
-                    </td>
-                    <td>
+                    </Table.TD>
+                    <Table.TD>
                       <button onClick={() => leaveOrganization(org.organization[0]._id)}>Leave</button>
-                    </td>
-                  </tr>
-                ))
+                    </Table.TD>
+                  </Table.TR>))
               }
-            </tbody>
-            
-          </table>
+            </Table.Body>
+          </Table>
         }
       </div>
-    </div>
+    </Page>
     
   );
 };

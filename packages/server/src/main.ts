@@ -188,14 +188,14 @@ router.post("/createOrganization", async (ctx) => {
     catch(error){
       ctx.response.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-      ctx.response.body = {message: "Organization already exists!"}
+      ctx.response.body = {message: "Organization already exists!"};
     }
   }
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
 })
 
@@ -227,8 +227,8 @@ router.post("/getOrganizations", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
   
 })
@@ -269,8 +269,8 @@ router.get("/getUsers", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
   
 })
@@ -313,8 +313,8 @@ router.get("/deleteMembership", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
   
 })
@@ -360,14 +360,14 @@ router.post("/addMembership", async (ctx) => {
     catch(error){
       ctx.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-      ctx.response.body = {message: "No such user!"}
+      ctx.response.body = {message: "No such user!"};
     }
   }
   catch(error){
     ctx.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
   
 })
@@ -411,8 +411,8 @@ router.post("/updateMembership", async (ctx) => {
   catch(error){
     ctx.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
   
 })
@@ -434,8 +434,8 @@ router.get("/deleteProfile", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
   
 })
@@ -468,8 +468,8 @@ router.post("/leaveOrg", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message
-    ctx.response.body = {message: message}
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
   }
 })
 

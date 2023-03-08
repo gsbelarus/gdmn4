@@ -1,11 +1,34 @@
+import { InputUnstyled } from "@mui/base";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import "./organization.css"
+import styled from "styled-components";
+import { Button } from "../controls/button";
+import { Table } from "../table/table";
 
 interface IUser {
     email: string;
     role: string
 }
+
+const Container = styled.div`
+  margin-left: 50px;
+`;
+
+const Input = styled(InputUnstyled)`
+  .MuiInput-input {
+    border-radius: 4px;
+  }
+`;
+
+const Form = styled.div`
+  margin-top: 30px;
+  display: flex;
+  column-gap: 10px;
+`;
+
+const ErrorSpan = styled.span`
+  color: red;
+`;
 
 
 export const Organization = () => {
@@ -21,10 +44,6 @@ export const Organization = () => {
   const id = location.pathname.split("/")[2];
 
   useEffect(() => {
-    // axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {
-    //     setUsers(res.data.users)
-    //     setLoaded(false)
-    // });
     fetch(`http://localhost:3000/getUsers?org=${id}`, {
       method: 'GET',
       headers: {
@@ -42,7 +61,6 @@ export const Organization = () => {
   }, [id]);
 
   const handleRoleChange = (user: number, newRole: string) => {
-    // axios.post("http://localhost:3000/updateMembership", {user: user, role: newRole, org: id}).then(res => setUsers(res.data.users))
     fetch(`http://localhost:3000/updateMembership`, {
       method: 'POST',
       body: JSON.stringify({user: user, role: newRole, org: id}),
@@ -60,7 +78,6 @@ export const Organization = () => {
   };
 
   const handleUserRemove = (user: number) => {
-    // axios.get(`http://localhost:3000/deleteMembership?user=${user}&org=${id}`).then(res => setUsers(res.data.users))
     fetch(`http://localhost:3000/deleteMembership?user=${user}&org=${id}`, {
       method: 'GET',
       headers: {
@@ -95,40 +112,43 @@ export const Organization = () => {
   };
 
   return (
-    <div className="organizationInfo">
+    <Container>
       {loading? "" :
       <>
         <h1>Organization: {users[0].organization[0].name}</h1>
-        <table className="scrollTable2">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.user[0]._id}>
-              <td>{user.user[0].email}</td>
-              <td>
-                <select
-                  value={user.role}
-                  onChange={(e) => handleRoleChange(user.user[0]._id, e.target.value)}
-                >
-                  <option value="admin">Admin</option>
-                  <option value="user">User</option>
-                </select>
-              </td>
-              <td>
-                <button onClick={() => handleUserRemove(user.user[0]._id)}>Remove</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        </table>
-        <div className="addForm">
-        <input type="text" name="email" placeholder="Email" required onChange={e => setNewUser(prev => {
+        <Table>
+            <Table.Head>
+              <Table.TR>
+                <Table.TH>Email</Table.TH>
+                <Table.TH>Role</Table.TH>
+                <Table.TH>Action</Table.TH>
+              </Table.TR>
+            </Table.Head>
+            <Table.Body>
+              {
+                users.map(user => (
+                  <Table.TR key={user.user[0]._id}>
+                    <Table.TD>
+                      {user.user[0].email}
+                    </Table.TD>
+                    <Table.TD>
+                      <select
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.user[0]._id, e.target.value)}
+                      >
+                      <option value="admin">Admin</option>
+                      <option value="user">User</option>
+                      </select>
+                    </Table.TD>
+                    <Table.TD>
+                      <Button onClick={() => handleUserRemove(user.user[0]._id)}>Remove</Button>
+                    </Table.TD>
+                  </Table.TR>))
+              }
+            </Table.Body>
+          </Table>
+        <Form>
+        <Input type="text" name="email" placeholder="Email" required onChange={e => setNewUser(prev => {
                 return {
                     ...prev, email: e.target.value
                 }
@@ -142,14 +162,14 @@ export const Organization = () => {
             <option value="admin">Admin</option>
             <option value="user">User</option>
             </select>
-            <button onClick={handleUserAdd}>Add user</button>
-        </div>
+            <Button onClick={handleUserAdd}>Add user</Button>
+        </Form>
         {
-            <span className='error'>{err}</span>
+            <ErrorSpan>{err}</ErrorSpan>
           }
         </>
       }
         
-    </div>
+    </Container>
   );
 };

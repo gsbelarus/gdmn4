@@ -44,6 +44,11 @@ const Header = styled.div`
   }
 `;
 
+const ProfileLink = styled.div`
+  margin: 0, auto;
+  font-size: 30px
+`;
+
 export const App = () => {
 
   const { email } = useAppSelector( state => state.user );
@@ -64,9 +69,16 @@ export const App = () => {
             <h1>GDMN #4</h1>
             {
               email ?
-              <div>
-                Welcome {email}! <span onClick={ handleLogoff }>Logoff</span> <Link to="/profile">Profile</Link>
-              </div>
+              <>
+                <ProfileLink>
+                  <Link to="/profile" style={{color: 'white'}}>Profile</Link>
+                </ProfileLink>
+                
+                <div>
+                  Welcome {email}! <span onClick={ handleLogoff }>Logoff</span> 
+                </div>
+              </>
+              
               :
               null
             }
