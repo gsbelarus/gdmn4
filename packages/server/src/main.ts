@@ -7,7 +7,7 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import { LoginRequest, RegisterRequest, TRegisterResponse } from '@gdmn-cz/types';
+import { CreateMembershipRequest, CreateOrganizationRequest, LoginRequest, RegisterRequest, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
 
@@ -159,61 +159,81 @@ router
   });
 
 router.post("/createOrganization", async (ctx) => {
-  const email = ctx.request.body.email
-  const user = await User.findOne({email: email})
-
   try{
-    const organization = new Organization({name: ctx.request.body.name})
-    const saved = await organization.save()
-    const membership = new Membership({
-      user: user._id, 
-      organization: saved._id, 
-      role: "admin"
-    })
-    await membership.save()
-    const organizations = await Membership.aggregate([
-      { $match: { user: user._id } },
-      { $lookup: {
-          from: "organizations",
-          localField: "organization",
-          foreignField: "_id",
-          as: "organization"
-      } },
-    ])
-  
-    ctx.response.body = {
-      organizations: organizations
+    const {email, name} = CreateOrganizationRequest.parse(ctx.request.body);
+    const user = await User.findOne({email: email});
+
+    try{
+      const organization = new Organization({name: name});
+      const saved = await organization.save();
+      const membership = new Membership({
+        user: user._id, 
+        organization: saved._id, 
+        role: "admin"
+      });
+      await membership.save();
+      const organizations = await Membership.aggregate([
+        { $match: { user: user._id } },
+        { $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+        } },
+      ]);
+    
+      ctx.response.body = {
+        organizations: organizations
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Organization already exists!"}
     }
   }
   catch(error){
-    ctx.response.status = 500
+    ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message
+    ctx.response.body = {message: message}
   }
-  
-  
 })
 
 router.post("/getOrganizations", async (ctx) => {
-  const email = ctx.request.body.email
-  const user = await User.findOne({email: email})
-  const id = user._id
-  const organizations = await Membership.aggregate([
-    { $match: { user: id } },
-    { $lookup: {
-        from: "organizations",
-        localField: "organization",
-        foreignField: "_id",
-        as: "organization"
-    } },
-])
+  try{
+    const {email} = CreateMembershipRequest.parse(ctx.request.body);
+    try{
+      const user = await User.findOne({email: email});
+      const id = user._id;
+      const organizations = await Membership.aggregate([
+        { $match: { user: id } },
+        { $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+        } },
+      ]);
 
-  ctx.response.body = {
-    organizations: organizations
+      ctx.response.body = {
+        organizations: organizations
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
   }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+  }
+  
 })
 
 router.get("/getUsers", async (ctx) => {
-  const org = new mongoose.Types.ObjectId(ctx.query.org)
+  const org = new mongoose.Types.ObjectId(ctx.query.org);
   const users = await Membership.aggregate([
     {$match: {organization: org}},
     {
@@ -232,16 +252,16 @@ router.get("/getUsers", async (ctx) => {
         as: "organization"
       }
     }
-  ])
+  ]);
   ctx.response.body = {
     users: users
-  }
+  };
 })
 
 router.get("/deleteMembership", async (ctx) => {
-  const user_id = new mongoose.Types.ObjectId(ctx.query.user)
-  const org_id = new mongoose.Types.ObjectId(ctx.query.org)
-  await Membership.deleteOne({user: user_id, organization: org_id})
+  const user_id = new mongoose.Types.ObjectId(ctx.query.user);
+  const org_id = new mongoose.Types.ObjectId(ctx.query.org);
+  await Membership.deleteOne({user: user_id, organization: org_id});
   const users = await Membership.aggregate([
     {$match: {organization: org_id}},
     {
@@ -260,51 +280,59 @@ router.get("/deleteMembership", async (ctx) => {
         as: "organization"
       }
     }
-  ])
+  ]);
   ctx.response.body = {
     users: users
-  }
+  };
 })
 
 router.post("/addMembership", async (ctx) => {
   try{
-    const user = await User.findOne({email: ctx.request.body.email})
-    const user_id = user._id
-    const org_id = new mongoose.Types.ObjectId(ctx.query.org)
-    await Membership.findOneAndDelete({user: user_id, organization: org_id})
-    const membership = new Membership({
-      user: user_id,
-      organization: org_id,
-      role: ctx.request.body.role
-    })
-    
-    await membership.save()
-    const users = await Membership.aggregate([
-      {$match: {organization: org_id}},
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "user"
+    const {email} = CreateMembershipRequest.parse(ctx.request.body);
+    try{
+      const user = await User.findOne({email: email});
+      const user_id = user._id;
+      const org_id = new mongoose.Types.ObjectId(ctx.query.org);
+      await Membership.findOneAndDelete({user: user_id, organization: org_id});
+      const membership = new Membership({
+        user: user_id,
+        organization: org_id,
+        role: ctx.request.body.role
+      });
+      
+      await membership.save();
+      const users = await Membership.aggregate([
+        {$match: {organization: org_id}},
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+          }
         }
-      },
-      {
-        $lookup: {
-          from: "organizations",
-          localField: "organization",
-          foreignField: "_id",
-          as: "organization"
-        }
-      }
-    ])
-    ctx.response.body = {
-      users: users
+      ]);
+      ctx.response.body = {
+        users: users
+      };
+    }
+    catch(error){
+      ctx.status = 500;
+      ctx.response.body = {message: "No such user!"}
     }
   }
   catch(error){
-    ctx.status = 500
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.status = 500;
+    const message = JSON.parse(error.message)[0].message
+    ctx.response.body = {message: message}
   }
   
 })
@@ -312,7 +340,7 @@ router.post("/addMembership", async (ctx) => {
 router.post("/updateMembership", async (ctx) => {
   await Membership.updateOne({user: new mongoose.Types.ObjectId(ctx.request.body.user), 
   organization: new mongoose.Types.ObjectId(ctx.request.body.org)}, {role: ctx.request.body.role}
-  )
+  );
 
   const users = await Membership.aggregate([
     {$match: {organization: new mongoose.Types.ObjectId(ctx.request.body.org)}},
@@ -332,22 +360,22 @@ router.post("/updateMembership", async (ctx) => {
         as: "organization"
       }
     }
-  ])
+  ]);
   ctx.response.body = {
     users: users
-  }
+  };
 })
 
 router.get("/deleteProfile", async (ctx) => {
-  await User.findOneAndDelete({email: ctx.query.email})
+  await User.findOneAndDelete({email: ctx.query.email});
   ctx.response.body = {
     message: "Success!"
-  }
+  };
 })
 
 router.post("/leaveOrg", async (ctx) => {
-  const user = await User.findOne({email: ctx.request.body.user})
-  await Membership.deleteOne({user: user._id, organization: new mongoose.Types.ObjectId(ctx.request.body.org)})
+  const user = await User.findOne({email: ctx.request.body.user});
+  await Membership.deleteOne({user: user._id, organization: new mongoose.Types.ObjectId(ctx.request.body.org)});
   const organizations = await Membership.aggregate([
     { $match: { user: user._id } },
     { $lookup: {
@@ -356,11 +384,11 @@ router.post("/leaveOrg", async (ctx) => {
         foreignField: "_id",
         as: "organization"
     } },
-])
+]);
 
   ctx.response.body = {
     organizations: organizations
-  }
+  };
 })
 
 app

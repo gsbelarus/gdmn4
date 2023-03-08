@@ -47,38 +47,48 @@ interface Props {
 
 export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
 
-  const [organizations, setOrganizations] = useState<Array<any>>([])
-  const [loading, setLoading] = useState(true)
-  const [err, setErr] = useState(false)
-  const [name, setName] = useState("")
-  const navigate = useNavigate()
+  const [organizations, setOrganizations] = useState<Array<any>>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [name, setName] = useState("");
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     axios.post("http://localhost:3000/getOrganizations", {email: email}).then(res => {
     setOrganizations(res.data.organizations)
     setLoading(false)
-    })
-  }, [])
+    });
+  }, [email]);
 
   const createOrganization = () => {
-    axios.post("http://localhost:3000/createOrganization", {name: name, email: email}).then(res => 
-    {console.log(res.data.message)
+    fetch(`http://localhost:3000/createOrganization`, {
+      method: 'POST',
+      body: JSON.stringify({name: name, email: email}),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json()
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
       setName("")
-      setOrganizations(res.data.organizations)
-      setErr(false)
-  }).catch(() => setErr(true))
-  }
+      setOrganizations(data.organizations)
+      setErr("")
+    }).catch(err => setErr(err.message))
+};
 
   const deleteProfile = () => {
     axios.get(`http://localhost:3000/deleteProfile?email=${email}`).then(res => {
       dispatch(logOff())
       navigate("/")
-    })
+    });
   }
 
   const leaveOrganization = (org: string) => {
-    axios.post("http://localhost:3000/leaveOrg", {user: email, org: org}).then(res => setOrganizations(res.data.organizations))
+    axios.post("http://localhost:3000/leaveOrg", {user: email, org: org}).then(res => setOrganizations(res.data.organizations));
   }
 
   return (
@@ -93,9 +103,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
         <div className='orgCreate'>
           <span>Enter organization name</span>
           <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
-          {
-            err? <span className='error'>Organization already exists!</span> : ""
-          }
+          <span className='error'>{err}</span>
           <Button onClick={createOrganization}>Create</Button>
         </div>
       </div>

@@ -49,11 +49,11 @@ export const App = () => {
   const { email } = useAppSelector( state => state.user );
   const { messages } = useAppSelector( state => state.log );
   const dispatch = useAppDispatch();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const handleLogoff = () => {
     dispatch(logOff())
     navigate("/")
-  }
+  };
 
   return (
     <StyleSheetManager disableVendorPrefixes={true}>

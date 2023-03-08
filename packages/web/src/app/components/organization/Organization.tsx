@@ -13,21 +13,21 @@ interface IUser {
 export const Organization = () => {
 
   const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoaded] = useState(true)
-  const [err, setErr] = useState(false)
+  const [loading, setLoaded] = useState(true);
+  const [err, setErr] = useState("");
   const [newUser, setNewUser] = useState<IUser>({
     email: "", role: "user"
-  })
+  });
 
-  const location = useLocation()
-  const id = location.pathname.split("/")[2]
+  const location = useLocation();
+  const id = location.pathname.split("/")[2];
 
   useEffect(() => {
     axios.get(`http://localhost:3000/getUsers?org=${id}`).then(res => {
         setUsers(res.data.users)
         setLoaded(false)
     })
-  }, [])
+  }, [id]);
 
   const handleRoleChange = (user: number, newRole: string) => {
     axios.post("http://localhost:3000/updateMembership", {user: user, role: newRole, org: id}).then(res => setUsers(res.data.users))
@@ -38,10 +38,21 @@ export const Organization = () => {
   };
 
   const handleUserAdd = () => {
-    axios.post(`http://localhost:3000/addMembership?org=${id}`, newUser).then(res => {
-        setUsers(res.data.users)
-        setErr(false)
-    }).catch(() => setErr(true))
+    fetch(`http://localhost:3000/addMembership?org=${id}`, {
+      method: 'POST',
+      body: JSON.stringify(newUser),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      }
+    }).then(res => {
+      if(res.ok) {
+        return res.json()
+      }
+      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
+    }).then(data => {
+      setUsers(data.users)
+      setErr("")
+    }).catch(err => setErr(err.message))
   };
 
   return (
@@ -95,7 +106,7 @@ export const Organization = () => {
             <button onClick={handleUserAdd}>Add user</button>
         </div>
         {
-            err? <span className='error'>User with this email doesn't exist!</span> : ""
+            <span className='error'>{err}</span>
           }
         </>
       }

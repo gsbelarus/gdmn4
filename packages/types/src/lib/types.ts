@@ -47,6 +47,15 @@ export const LoginResponse = z.object({
 
 export type TLoginResponse = z.infer<typeof LoginResponse>;
 
+export const CreateMembershipRequest = z.object({
+  email: z.string().email()
+})
+
+export const CreateOrganizationRequest = z.object({
+  email: z.string().email(),
+  name: z.string()
+})
+
 export function types(): string {
   return 'types';
 };
