@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { Membership } from './membershipModel';
 
 interface IUser {
   email: string;
@@ -18,6 +19,9 @@ const userSchema = new Schema<IUser>({
     required: true,
     minlength: 1 
   }
+}).post('findOneAndDelete', async (document) => {
+  await Membership.deleteMany({user: document._id})
 });
+
 
 export const User = model<IUser>('User', userSchema);

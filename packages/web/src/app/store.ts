@@ -1,12 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import userReducer from './features/security/user';
 import logReducer from './features/security/log';
+import nlpReducer from './features/nlp/nlpSlice';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
-    log: logReducer
+    log: logReducer,
+    nlp: nlpReducer
   }
 });
 

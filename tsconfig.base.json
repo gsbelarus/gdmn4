@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@gdmn-cz/types": ["packages/types/src/index.ts"]
+      "@gdmn-cz/types": ["packages/types/src/index.ts"],
+      "@gdmn-cz/util": ["packages/util/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

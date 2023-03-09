@@ -4,9 +4,12 @@ import bodyParser from 'koa-bodyparser';
 import Router from 'koa-router';
 import { hashSync, compareSync } from 'bcryptjs';
 import { User } from './db/userModel';
+import { Organization } from './db/organizationModel';
+import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import { LoginRequest, RegisterRequest, TRegisterResponse } from '@gdmn-cz/types';
+import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, getMembers, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
+import mongoose from 'mongoose';
 
 dbConnect();
 
@@ -154,6 +157,321 @@ router
       message: `restricted access. user: ${ctx.request.user.userEmail}`
     };
   });
+
+router.post("/createOrganization", async (ctx) => {
+  try{
+    const {email, name} = CreateOrganizationRequest.parse(ctx.request.body);
+    try{
+      const user = await User.findOne({email: email});
+      const organization = new Organization({name: name});
+      const saved = await organization.save();
+      const membership = new Membership({
+        user: user._id, 
+        organization: saved._id, 
+        role: "admin"
+      });
+      await membership.save();
+      const organizations = await Membership.aggregate([
+        { $match: { user: user._id } },
+        { $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+        } },
+      ]);
+    
+      ctx.response.body = {
+        organizations: organizations
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Organization already exists!"};
+    }
+  }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+})
+
+router.post("/getOrganizations", async (ctx) => {
+  try{
+    const {email} = EmailRequest.parse(ctx.request.body);
+    try{
+      const user = await User.findOne({email: email});
+      const id = user._id;
+      const organizations = await Membership.aggregate([
+        { $match: { user: id } },
+        { $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+        } },
+      ]);
+
+      ctx.response.body = {
+        organizations: organizations
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+  
+})
+
+router.get("/getUsers", async (ctx) => {
+  try{
+    const {org} = getMembers.parse(ctx.query);
+    const torg = new mongoose.Types.ObjectId(org);
+    try{
+      const users = await Membership.aggregate([
+        {$match: {organization: torg}},
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+          }
+        }
+      ]);
+      ctx.response.body = {
+        users: users
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+  
+})
+
+router.get("/deleteMembership", async (ctx) => {
+  try{
+    const {user, org} = DeleteMemberRequest.parse(ctx.query);
+    const user_id = new mongoose.Types.ObjectId(user);
+    const org_id = new mongoose.Types.ObjectId(org);
+    try{
+      await Membership.deleteOne({user: user_id, organization: org_id});
+      const users = await Membership.aggregate([
+        {$match: {organization: org_id}},
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+          }
+        }
+      ]);
+      ctx.response.body = {
+        users: users
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+  
+})
+
+router.post("/addMembership", async (ctx) => {
+  try{
+    const {email} = EmailRequest.parse(ctx.request.body);
+    try{
+      const user = await User.findOne({email: email});
+      const user_id = user._id;
+      const org_id = new mongoose.Types.ObjectId(ctx.query.org);
+      await Membership.findOneAndDelete({user: user_id, organization: org_id});
+      const membership = new Membership({
+        user: user_id,
+        organization: org_id,
+        role: ctx.request.body.role
+      });
+      
+      await membership.save();
+      const users = await Membership.aggregate([
+        {$match: {organization: org_id}},
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+          }
+        }
+      ]);
+      ctx.response.body = {
+        users: users
+      };
+    }
+    catch(error){
+      ctx.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "No such user!"};
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+  
+})
+
+router.post("/updateMembership", async (ctx) => {
+  try{
+    const {user, role, org} = RoleChange.parse(ctx.request.body);
+    try{
+      await Membership.updateOne({user: new mongoose.Types.ObjectId(user), 
+        organization: new mongoose.Types.ObjectId(org)}, {role: role}
+        );
+      
+        const users = await Membership.aggregate([
+          {$match: {organization: new mongoose.Types.ObjectId(org)}},
+          {
+            $lookup: {
+              from: "users",
+              localField: "user",
+              foreignField: "_id",
+              as: "user"
+            }
+          },
+          {
+            $lookup: {
+              from: "organizations",
+              localField: "organization",
+              foreignField: "_id",
+              as: "organization"
+            }
+          }
+        ]);
+        ctx.response.body = {
+          users: users
+        };
+    }
+    catch(error){
+      ctx.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+  
+})
+
+router.get("/deleteProfile", async (ctx) => {
+  try{
+    const {email} = EmailRequest.parse(ctx.query);
+    try{
+      await User.findOneAndDelete({email: email});
+      ctx.response.body = {
+        message: "Success!"
+      };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+  
+})
+
+router.post("/leaveOrg", async (ctx) => {
+  try{
+    const {user, org} = LeaveOrganizationRequest.parse(ctx.request.body);
+    try{
+      const fUser = await User.findOne({email: user});
+      await Membership.deleteOne({user: fUser._id, organization: new mongoose.Types.ObjectId(org)});
+      const organizations = await Membership.aggregate([
+        { $match: { user: fUser._id } },
+        { $lookup: {
+            from: "organizations",
+            localField: "organization",
+            foreignField: "_id",
+            as: "organization"
+        } },
+    ])
+
+    ctx.response.body = {
+      organizations: organizations
+    };
+    }
+    catch(error){
+      ctx.response.status = 500;
+      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+  catch(error){
+    ctx.response.status = 500;
+    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    const message = JSON.parse(error.message)[0].message;
+    ctx.response.body = {message: message};
+  }
+})
 
 app
   .use(router.routes())
