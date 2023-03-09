@@ -1,4 +1,5 @@
 import koa from 'koa';
+import cors from '@koa/cors';
 import { dbConnect } from './db/db-connect';
 import bodyParser from 'koa-bodyparser';
 import Router from 'koa-router';
@@ -18,6 +19,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 const app = new koa();
 
+app.use(cors());
 app.use(bodyParser());
 
 app.use(async (ctx, next) => {

@@ -15,6 +15,7 @@ const NLPDialogContainer = styled.div`
   text-align: left;
   background-color: aquamarine;
   overflow: hidden;
+  border-radius: 4px;
 
   .NLPScrollBar {
     z-index: 10;
@@ -25,6 +26,18 @@ const NLPDialogContainer = styled.div`
     top: 0;
     right: 0;
     background: inherit;
+    border-radius: 4px;
+  }
+
+  .NLPScrollBarThumb {
+    display: block;
+    position: absolute;
+    width: 100%;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    content: "";
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
   }
 
   .NLPScrollBar:hover {
@@ -42,26 +55,6 @@ const NLPDialogContainer = styled.div`
     right: 0;
     background: rgba(0, 0, 0, 0.2);
     transition: background 0.5s;
-  }
-
-  .NLPScrollBar:hover .NLPScrollBarThumb::before {
-    content: "";
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.2);
-    transition: background 0.5s;
-    border-radius: 5px;
-  }
-
-  .NLPScrollBarVisible .NLPScrollBarThumb::before {
-    content: "";
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.2);
-    transition: background 0.5s;
-    border-radius: 5px;
   }
 `;
 
@@ -187,18 +180,9 @@ const NLPInput = styled.textarea`
   resize: none;
 `;
 
-const NLPScrollBarThumb = styled.div`
-  display: block;
-  position: absolute;
-  width: 100%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-`;
-
 /* eslint-disable-next-line */
 export interface ChatViewProps {
   nlpDialog: NLPDialog;
-  setNLPDialog: (nlpDialog: NLPDialog) => void;
   push: (who: string, text: string) => void;
 };
 
@@ -238,7 +222,6 @@ export function ChatView({ nlpDialog, push }: ChatViewProps) {
   const shownItems = useRef<HTMLDivElement[]>([]);
   const scrollThumb = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef();
-  const mode = document.cookie.split('mode=')?.[1];
 
   const { showFrom, showTo, scrollTimer, prevClientY, prevFrac, recalc, partialOK, prevNLPDialog } = state;
 
@@ -251,14 +234,15 @@ export function ChatView({ nlpDialog, push }: ChatViewProps) {
 
     useImperativeHandle(ref, () => ({
       setTextAndFocus: (text: string) => {
-        setText(text); ta.current?.focus();
+        setText(text); 
+        ta.current?.focus();
       }
     }));
 
     const onInputPressEnter = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       const trimText = text.trim();
 
-      if (e.key === 'Enter' && trimText) {
+      if (e.key === 'Enter' && !e.shiftKey && trimText) {
         setText('');
         setPrevText(trimText);
         onInputText(trimText);
@@ -284,6 +268,7 @@ export function ChatView({ nlpDialog, push }: ChatViewProps) {
         onKeyDown={onInputArrowUp}
         onChange={onInputChange}
         ref={ta}
+        autoFocus
       />
     );
   });
@@ -568,7 +553,8 @@ export function ChatView({ nlpDialog, push }: ChatViewProps) {
               onPointerUp={onPointerUp}
               onPointerMove={onPointerMove}
             >
-              <NLPScrollBarThumb
+              <div
+                className='NLPScrollBarThumb'
                 style={{ height: thumbHeight, top: thumbTop }}
                 ref={scrollThumb}
               />

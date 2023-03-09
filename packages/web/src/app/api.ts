@@ -76,6 +76,7 @@ export const ftch = async <T extends AnyZodObject>(url: string, req: Object, par
   }
 };
 
+/*
 export const registerApi = (req: TRegisterRequest) => async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {
   await ftch('register', req, RegisterResponse, dispatch, getState);
 };
@@ -83,3 +84,4 @@ export const registerApi = (req: TRegisterRequest) => async (dispatch: AppDispat
 export const loginApi = (req: TLoginRequest) => async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {
   await ftch('login', req, LoginResponse, dispatch, getState, data => logIn(data) );
 };
+*/

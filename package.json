@@ -58,6 +58,7 @@
     "vitest": "^0.29.2"
   },
   "dependencies": {
+    "@koa/cors": "^4.0.0",
     "@mui/base": "^5.0.0-alpha.120",
     "@reduxjs/toolkit": "^1.9.3",
     "@xstate/react": "^3.2.1",
