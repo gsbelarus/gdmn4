@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, getMembers, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
+import { z } from 'zod';
 
 dbConnect();
 
@@ -181,6 +182,7 @@ router.post("/createOrganization", async (ctx) => {
         } },
       ]);
     
+      ctx.status = 200;
       ctx.response.body = {
         organizations: organizations
       };
@@ -199,9 +201,9 @@ router.post("/createOrganization", async (ctx) => {
   }
 })
 
-router.post("/getOrganizations", async (ctx) => {
+router.get("/getOrganizations", async (ctx) => {
   try{
-    const {email} = EmailRequest.parse(ctx.request.body);
+    const {email} = EmailRequest.parse(ctx.query);
     try{
       const user = await User.findOne({email: email});
       const id = user._id;
@@ -214,6 +216,7 @@ router.post("/getOrganizations", async (ctx) => {
             as: "organization"
         } },
       ]);
+      ctx.status = 200;
 
       ctx.response.body = {
         organizations: organizations
@@ -275,35 +278,14 @@ router.get("/getUsers", async (ctx) => {
   
 })
 
-router.get("/deleteMembership", async (ctx) => {
+router.delete("/deleteMembership", async (ctx) => {
   try{
     const {user, org} = DeleteMemberRequest.parse(ctx.query);
     const user_id = new mongoose.Types.ObjectId(user);
     const org_id = new mongoose.Types.ObjectId(org);
     try{
       await Membership.deleteOne({user: user_id, organization: org_id});
-      const users = await Membership.aggregate([
-        {$match: {organization: org_id}},
-        {
-          $lookup: {
-            from: "users",
-            localField: "user",
-            foreignField: "_id",
-            as: "user"
-          }
-        },
-        {
-          $lookup: {
-            from: "organizations",
-            localField: "organization",
-            foreignField: "_id",
-            as: "organization"
-          }
-        }
-      ]);
-      ctx.response.body = {
-        users: users
-      };
+      ctx.status = 200;
     }
     catch(error){
       ctx.response.status = 500;
@@ -334,28 +316,7 @@ router.post("/addMembership", async (ctx) => {
       });
       
       await membership.save();
-      const users = await Membership.aggregate([
-        {$match: {organization: org_id}},
-        {
-          $lookup: {
-            from: "users",
-            localField: "user",
-            foreignField: "_id",
-            as: "user"
-          }
-        },
-        {
-          $lookup: {
-            from: "organizations",
-            localField: "organization",
-            foreignField: "_id",
-            as: "organization"
-          }
-        }
-      ]);
-      ctx.response.body = {
-        users: users
-      };
+      ctx.status = 200;
     }
     catch(error){
       ctx.status = 500;
@@ -365,6 +326,7 @@ router.post("/addMembership", async (ctx) => {
   }
   catch(error){
     ctx.status = 500;
+    console.log(error.message);
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
     const message = JSON.parse(error.message)[0].message;
     ctx.response.body = {message: message};
@@ -372,36 +334,14 @@ router.post("/addMembership", async (ctx) => {
   
 })
 
-router.post("/updateMembership", async (ctx) => {
+router.put("/updateMembership", async (ctx) => {
   try{
     const {user, role, org} = RoleChange.parse(ctx.request.body);
     try{
       await Membership.updateOne({user: new mongoose.Types.ObjectId(user), 
         organization: new mongoose.Types.ObjectId(org)}, {role: role}
         );
-      
-        const users = await Membership.aggregate([
-          {$match: {organization: new mongoose.Types.ObjectId(org)}},
-          {
-            $lookup: {
-              from: "users",
-              localField: "user",
-              foreignField: "_id",
-              as: "user"
-            }
-          },
-          {
-            $lookup: {
-              from: "organizations",
-              localField: "organization",
-              foreignField: "_id",
-              as: "organization"
-            }
-          }
-        ]);
-        ctx.response.body = {
-          users: users
-        };
+        ctx.status = 200
     }
     catch(error){
       ctx.status = 500;
@@ -410,6 +350,9 @@ router.post("/updateMembership", async (ctx) => {
   }
   catch(error){
     ctx.status = 500;
+    if (error instanceof z.ZodError) {
+      console.log(error.issues);
+    }
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
     const message = JSON.parse(error.message)[0].message;
     ctx.response.body = {message: message};
@@ -417,14 +360,12 @@ router.post("/updateMembership", async (ctx) => {
   
 })
 
-router.get("/deleteProfile", async (ctx) => {
+router.delete("/deleteProfile", async (ctx) => {
   try{
     const {email} = EmailRequest.parse(ctx.query);
     try{
       await User.findOneAndDelete({email: email});
-      ctx.response.body = {
-        message: "Success!"
-      };
+      ctx.status = 200;
     }
     catch(error){
       ctx.response.status = 500;
@@ -440,25 +381,13 @@ router.get("/deleteProfile", async (ctx) => {
   
 })
 
-router.post("/leaveOrg", async (ctx) => {
+router.delete("/leaveOrganization", async (ctx) => {
   try{
     const {user, org} = LeaveOrganizationRequest.parse(ctx.request.body);
     try{
       const fUser = await User.findOne({email: user});
       await Membership.deleteOne({user: fUser._id, organization: new mongoose.Types.ObjectId(org)});
-      const organizations = await Membership.aggregate([
-        { $match: { user: fUser._id } },
-        { $lookup: {
-            from: "organizations",
-            localField: "organization",
-            foreignField: "_id",
-            as: "organization"
-        } },
-    ])
-
-    ctx.response.body = {
-      organizations: organizations
-    };
+      ctx.status = 200;
     }
     catch(error){
       ctx.response.status = 500;
