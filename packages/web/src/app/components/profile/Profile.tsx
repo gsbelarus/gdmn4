@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
 import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
@@ -69,7 +69,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const {data: body, isSuccess, refetch} = useGetOrganizationsQuery(email, {refetchOnMountOrArgChange: true, pollingInterval: 10000});
+  const {data: body, isSuccess, refetch} = useGetOrganizationsQuery(email, {refetchOnMountOrArgChange: true, pollingInterval: 30000});
   const [createOrganization] = useCreateOrganizationMutation();
   const [leaveOrganization] = useLeaveOrganizationMutation();
   const [deleteProfile] = useDeleteProfileMutation();
@@ -130,7 +130,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
             </Table.Head>
             <Table.Body>
               {
-                body.organizations.map(org => (
+                body.organizations.map((org: any) => (
                   <Table.TR key={org.organization[0]._id}>
                     <Table.TD>
                       {org.role === "admin"? <Link to={`/organization/${org.organization[0]._id}`}>{org.organization[0].name}</Link>: org.organization[0].name}

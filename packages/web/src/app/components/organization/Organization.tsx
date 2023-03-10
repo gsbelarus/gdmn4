@@ -1,5 +1,5 @@
 import { InputUnstyled } from "@mui/base";
-import React, { useEffect, useState } from "react";
+import React, {useState } from "react";
 import { useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { useAddMembershipMutation, useDeleteMembershipMutation, useGetUsersQuery, useUpdateMembershipMutation } from "../../org-api";
@@ -42,7 +42,7 @@ export const Organization = () => {
   const location = useLocation();
   const id = location.pathname.split("/")[2];
 
-  const {data: body, isSuccess, refetch} = useGetUsersQuery(id, {pollingInterval: 10000});
+  const {data: body, isSuccess, refetch} = useGetUsersQuery(id, {pollingInterval: 30000});
   const [addMembership] = useAddMembershipMutation();
   const [deleteMembership] = useDeleteMembershipMutation();
   const [updateMembership] = useUpdateMembershipMutation();
@@ -83,7 +83,7 @@ export const Organization = () => {
             </Table.Head>
             <Table.Body>
               {
-                body.users.map(user => (
+                body.users.map((user: any) => (
                   <Table.TR key={user.user[0]._id}>
                     <Table.TD>
                       {user.user[0].email}

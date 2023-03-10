@@ -221,6 +221,7 @@ router.get("/getOrganizations", async (ctx) => {
     catch(error){
       ctx.response.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
@@ -269,6 +270,7 @@ router.get("/getUsers", async (ctx) => {
     catch(error){
       ctx.response.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
@@ -300,6 +302,7 @@ router.delete("/deleteMembership", async (ctx) => {
     catch(error){
       ctx.response.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
@@ -345,6 +348,7 @@ router.post("/addMembership", async (ctx) => {
   catch(error){
     ctx.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = {message: "Internal error"};
     try{
       const message = JSON.parse(error.message)[0].message;
       ctx.response.body = {message: message};
@@ -371,6 +375,7 @@ router.put("/updateMembership", async (ctx) => {
     catch(error){
       ctx.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
@@ -400,6 +405,7 @@ router.delete("/deleteProfile", async (ctx) => {
     catch(error){
       ctx.response.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
@@ -430,6 +436,7 @@ router.delete("/leaveOrganization", async (ctx) => {
     catch(error){
       ctx.response.status = 500;
       ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
