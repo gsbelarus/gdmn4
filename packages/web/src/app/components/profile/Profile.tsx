@@ -74,20 +74,31 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
   const [leaveOrganization] = useLeaveOrganizationMutation();
   const [deleteProfile] = useDeleteProfileMutation();
 
-  const handleCreateOrganization = async () => {
-    await createOrganization({name: name, email: email});
-    refetch();
+  const handleCreateOrganization = () => {
+    createOrganization({name: name, email: email}).unwrap()
+    .then(() => {
+      setErr("");
+      refetch();
+    })
+    .catch((error) => {
+      setErr(error.data.message);
+      console.error(error)
+    });
 };
 
-  const handleDeleteProfile = async () => {
-    await deleteProfile(email);
-    dispatch(logOff());
-    navigate("/");
+  const handleDeleteProfile = () => {
+    deleteProfile(email).unwrap()
+    .then(() => {
+      dispatch(logOff());
+      navigate("/");
+    })
+    .catch((error) => console.error(error));
   }
 
-  const handleLeaveOrganization = async (org: string) => {
-    await leaveOrganization({user: email, org: org});
-    refetch();
+  const handleLeaveOrganization = (org: string) => {
+    leaveOrganization({user: email, org: org}).unwrap()
+    .then(() => refetch())
+    .catch((error) => console.error(error));
   }
 
   return (

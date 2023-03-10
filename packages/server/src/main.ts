@@ -10,7 +10,6 @@ import jwt from 'jsonwebtoken';
 import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, getMembers, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
-import { z } from 'zod';
 
 dbConnect();
 
@@ -172,20 +171,11 @@ router.post("/createOrganization", async (ctx) => {
         role: "admin"
       });
       await membership.save();
-      const organizations = await Membership.aggregate([
-        { $match: { user: user._id } },
-        { $lookup: {
-            from: "organizations",
-            localField: "organization",
-            foreignField: "_id",
-            as: "organization"
-        } },
-      ]);
     
       ctx.status = 200;
       ctx.response.body = {
-        organizations: organizations
-      };
+        status: "Organization created!"
+      }
     }
     catch(error){
       ctx.response.status = 500;
@@ -196,8 +186,14 @@ router.post("/createOrganization", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
+    
   }
 })
 
@@ -230,8 +226,13 @@ router.get("/getOrganizations", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
   
 })
@@ -260,6 +261,7 @@ router.get("/getUsers", async (ctx) => {
           }
         }
       ]);
+      ctx.status = 200;
       ctx.response.body = {
         users: users
       };
@@ -272,8 +274,13 @@ router.get("/getUsers", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
   
 })
@@ -286,6 +293,9 @@ router.delete("/deleteMembership", async (ctx) => {
     try{
       await Membership.deleteOne({user: user_id, organization: org_id});
       ctx.status = 200;
+      ctx.response.body = {
+        status: "Membership deleted!"
+      }
     }
     catch(error){
       ctx.response.status = 500;
@@ -295,8 +305,13 @@ router.delete("/deleteMembership", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
   
 })
@@ -317,6 +332,9 @@ router.post("/addMembership", async (ctx) => {
       
       await membership.save();
       ctx.status = 200;
+      ctx.response.body = {
+        status: "Membership added!"
+      }
     }
     catch(error){
       ctx.status = 500;
@@ -326,10 +344,14 @@ router.post("/addMembership", async (ctx) => {
   }
   catch(error){
     ctx.status = 500;
-    console.log(error.message);
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
   
 })
@@ -342,6 +364,9 @@ router.put("/updateMembership", async (ctx) => {
         organization: new mongoose.Types.ObjectId(org)}, {role: role}
         );
         ctx.status = 200
+        ctx.response.body = {
+          status: "Membership updated!"
+        }
     }
     catch(error){
       ctx.status = 500;
@@ -350,12 +375,14 @@ router.put("/updateMembership", async (ctx) => {
   }
   catch(error){
     ctx.status = 500;
-    if (error instanceof z.ZodError) {
-      console.log(error.issues);
-    }
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
   
 })
@@ -366,6 +393,9 @@ router.delete("/deleteProfile", async (ctx) => {
     try{
       await User.findOneAndDelete({email: email});
       ctx.status = 200;
+      ctx.response.body = {
+        status: "Profile deleted!"
+      }
     }
     catch(error){
       ctx.response.status = 500;
@@ -375,8 +405,13 @@ router.delete("/deleteProfile", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
   
 })
@@ -388,6 +423,9 @@ router.delete("/leaveOrganization", async (ctx) => {
       const fUser = await User.findOne({email: user});
       await Membership.deleteOne({user: fUser._id, organization: new mongoose.Types.ObjectId(org)});
       ctx.status = 200;
+      ctx.response.body = {
+        status: "Left organization!"
+      }
     }
     catch(error){
       ctx.response.status = 500;
@@ -397,8 +435,13 @@ router.delete("/leaveOrganization", async (ctx) => {
   catch(error){
     ctx.response.status = 500;
     ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    const message = JSON.parse(error.message)[0].message;
-    ctx.response.body = {message: message};
+    try{
+      const message = JSON.parse(error.message)[0].message;
+      ctx.response.body = {message: message};
+    }
+    catch(error){
+      ctx.response.body = {message: "Invalid input"};
+    }
   }
 })
 

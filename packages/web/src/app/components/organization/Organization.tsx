@@ -42,25 +42,30 @@ export const Organization = () => {
   const location = useLocation();
   const id = location.pathname.split("/")[2];
 
-  const {data: body, error, isFetching, isSuccess, refetch} = useGetUsersQuery(id, {pollingInterval: 10000});
+  const {data: body, isSuccess, refetch} = useGetUsersQuery(id, {pollingInterval: 10000});
   const [addMembership] = useAddMembershipMutation();
   const [deleteMembership] = useDeleteMembershipMutation();
   const [updateMembership] = useUpdateMembershipMutation();
-  // console.log(error);
 
-  const handleRoleChange = async (user: string, newRole: string) => {
-    await updateMembership({user: user, role: newRole, org: id});
-    refetch();
+  const handleRoleChange = (user: string, newRole: string) => {
+    updateMembership({user: user, role: newRole, org: id}).unwrap()
+    .then(() => refetch())
+    .catch((error) => console.error(error));
   };
 
-  const handleUserRemove = async (user: string) => {
-    await deleteMembership({user_id: user, org_id: id});
-    refetch();
+  const handleUserRemove = (user: string) => {
+    deleteMembership({user_id: user, org_id: id}).unwrap()
+    .then(() => refetch())
+    .catch((error) => console.error(error));
   };
 
-  const handleUserAdd = async () => {
-    await addMembership({id: id, newUser});
-    refetch();
+  const handleUserAdd = () => {
+    addMembership({id: id, newUser}).unwrap()
+    .then(() => refetch())
+    .catch((error) => {
+      setErr(error.data.message)
+      console.error(error)
+    });
   };
 
   return (
@@ -116,7 +121,7 @@ export const Organization = () => {
             </select>
             <Button onClick={handleUserAdd}>Add user</Button>
         </Form>
-        {
+          {
             <ErrorSpan>{err}</ErrorSpan>
           }
         </>
