@@ -1,7 +1,8 @@
 import { InputUnstyled } from "@mui/base";
-import React, { useEffect, useState } from "react";
+import React, {useState } from "react";
 import { useLocation } from "react-router-dom";
 import styled from "styled-components";
+import { useAddMembershipMutation, useDeleteMembershipMutation, useGetUsersQuery, useUpdateMembershipMutation } from "../../org-api";
 import { Button } from "../controls/button";
 import { Table } from "../table/table";
 
@@ -33,8 +34,6 @@ const ErrorSpan = styled.span`
 
 export const Organization = () => {
 
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoaded] = useState(true);
   const [err, setErr] = useState("");
   const [newUser, setNewUser] = useState<IUser>({
     email: "", role: "user"
@@ -43,79 +42,37 @@ export const Organization = () => {
   const location = useLocation();
   const id = location.pathname.split("/")[2];
 
-  useEffect(() => {
-    fetch(`http://localhost:3000/getUsers?org=${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setUsers(data.users);
-      setLoaded(false);
-    }).catch(err => console.log(err.message));
-  }, [id]);
+  const {data: body, isSuccess, refetch} = useGetUsersQuery(id, {pollingInterval: 30000});
+  const [addMembership] = useAddMembershipMutation();
+  const [deleteMembership] = useDeleteMembershipMutation();
+  const [updateMembership] = useUpdateMembershipMutation();
 
-  const handleRoleChange = (user: number, newRole: string) => {
-    fetch(`http://localhost:3000/updateMembership`, {
-      method: 'POST',
-      body: JSON.stringify({user: user, role: newRole, org: id}),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setUsers(data.users);
-    }).catch(err => console.log(err.message));
+  const handleRoleChange = (user: string, newRole: string) => {
+    updateMembership({user: user, role: newRole, org: id}).unwrap()
+    .then(() => refetch())
+    .catch((error) => console.error(error));
   };
 
-  const handleUserRemove = (user: number) => {
-    fetch(`http://localhost:3000/deleteMembership?user=${user}&org=${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setUsers(data.users);
-    }).catch(err => console.log(err.message));
+  const handleUserRemove = (user: string) => {
+    deleteMembership({user_id: user, org_id: id}).unwrap()
+    .then(() => refetch())
+    .catch((error) => console.error(error));
   };
 
   const handleUserAdd = () => {
-    fetch(`http://localhost:3000/addMembership?org=${id}`, {
-      method: 'POST',
-      body: JSON.stringify(newUser),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setUsers(data.users);
-      setErr("");
-    }).catch(err => setErr(err.message));
+    addMembership({id: id, newUser}).unwrap()
+    .then(() => refetch())
+    .catch((error) => {
+      setErr(error.data.message)
+      console.error(error)
+    });
   };
 
   return (
     <Container>
-      {loading? "" :
+      {isSuccess === false? "" : 
       <>
-        <h1>Organization: {users[0].organization[0].name}</h1>
+        <h1>Organization: {body.users[0].organization[0].name}</h1>
         <Table>
             <Table.Head>
               <Table.TR>
@@ -126,7 +83,7 @@ export const Organization = () => {
             </Table.Head>
             <Table.Body>
               {
-                users.map(user => (
+                body.users.map((user: any) => (
                   <Table.TR key={user.user[0]._id}>
                     <Table.TD>
                       {user.user[0].email}
@@ -164,7 +121,7 @@ export const Organization = () => {
             </select>
             <Button onClick={handleUserAdd}>Add user</Button>
         </Form>
-        {
+          {
             <ErrorSpan>{err}</ErrorSpan>
           }
         </>

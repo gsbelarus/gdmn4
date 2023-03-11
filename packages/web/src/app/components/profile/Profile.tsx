@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
 import InputUnstyled from '@mui/base/InputUnstyled';
 import { Button } from '../controls/button';
@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store';
 import { logOff } from '../../features/security/user';
 import { Table } from '../table/table';
+import { useCreateOrganizationMutation, useDeleteProfileMutation, useGetOrganizationsQuery, useLeaveOrganizationMutation } from '../../profile-api';
 
 const Container = styled.div`
   max-width: 800px;
@@ -63,83 +64,41 @@ interface Props {
 
 export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
 
-  const [organizations, setOrganizations] = useState<Array<any>>([]);
-  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [name, setName] = useState("");
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    fetch(`http://localhost:3000/getOrganizations`, {
-      method: 'POST',
-      body: JSON.stringify({email: email}),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setOrganizations(data.organizations);
-      setLoading(false);
-    }).catch(err => console.log(err.message))
-  }, [email]);
+  const {data: body, isSuccess, refetch} = useGetOrganizationsQuery(email, {refetchOnMountOrArgChange: true, pollingInterval: 30000});
+  const [createOrganization] = useCreateOrganizationMutation();
+  const [leaveOrganization] = useLeaveOrganizationMutation();
+  const [deleteProfile] = useDeleteProfileMutation();
 
-  const createOrganization = () => {
-    fetch(`http://localhost:3000/createOrganization`, {
-      method: 'POST',
-      body: JSON.stringify({name: name, email: email}),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setName("");
-      setOrganizations(data.organizations);
+  const handleCreateOrganization = () => {
+    createOrganization({name: name, email: email}).unwrap()
+    .then(() => {
       setErr("");
-    }).catch(err => setErr(err.message));
+      refetch();
+    })
+    .catch((error) => {
+      setErr(error.data.message);
+      console.error(error)
+    });
 };
 
-  const deleteProfile = () => {
-    fetch(`http://localhost:3000/deleteProfile?email=${email}`, {
-      method: 'GET',
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json()
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
+  const handleDeleteProfile = () => {
+    deleteProfile(email).unwrap()
+    .then(() => {
       dispatch(logOff());
       navigate("/");
-    }).catch(err => console.log(err.message));
-
+    })
+    .catch((error) => console.error(error));
   }
 
-  const leaveOrganization = (org: string) => {
-    fetch(`http://localhost:3000/leaveOrg`, {
-      method: 'POST',
-      body: JSON.stringify({user: email, org: org}),
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-      }
-    }).then(res => {
-      if(res.ok) {
-        return res.json();
-      }
-      return res.text().then(text => {throw new Error(JSON.parse(text).message)});
-    }).then(data => {
-      setOrganizations(data.organizations);
-    }).catch(err => console.log(err.message));
+  const handleLeaveOrganization = (org: string) => {
+    leaveOrganization({user: email, org: org}).unwrap()
+    .then(() => refetch())
+    .catch((error) => console.error(error));
   }
 
   return (
@@ -149,18 +108,18 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
         <Avatar src={avatarUrl} />
         <Email>{email}</Email>
         <Bio>This is a user</Bio>
-        <Button onClick={deleteProfile}>Delete profile!</Button>
+        <Button onClick={handleDeleteProfile}>Delete profile!</Button>
         </Container>
         <Create>
           <span>Enter organization name</span>
           <Input value={name} id="name" onChange={e => setName(e.target.value)}/>
           <ErrorSpan className='error'>{err}</ErrorSpan>
-          <Button onClick={createOrganization}>Create</Button>
+          <Button onClick={handleCreateOrganization}>Create</Button>
         </Create>
       </div>
       <div>
         {
-          loading? "" : 
+          isSuccess === false? "" : 
           <Table>
             <Table.Head>
               <Table.TR>
@@ -171,8 +130,8 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
             </Table.Head>
             <Table.Body>
               {
-                organizations.map(org => (
-                  <Table.TR>
+                body.organizations.map((org: any) => (
+                  <Table.TR key={org.organization[0]._id}>
                     <Table.TD>
                       {org.role === "admin"? <Link to={`/organization/${org.organization[0]._id}`}>{org.organization[0].name}</Link>: org.organization[0].name}
                     </Table.TD>
@@ -180,7 +139,7 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
                       {org.role}
                     </Table.TD>
                     <Table.TD>
-                      <button onClick={() => leaveOrganization(org.organization[0]._id)}>Leave</button>
+                      <button onClick={() => handleLeaveOrganization(org.organization[0]._id)}>Leave</button>
                     </Table.TD>
                   </Table.TR>))
               }
