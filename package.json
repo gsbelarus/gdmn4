@@ -20,7 +20,9 @@
     "@nrwl/workspace": "15.8.6",
     "@testing-library/react": "^14.0.0",
     "@types/jest": "29.4.0",
-    "@types/koa": "2.13.5",
+    "@types/koa": "^2.13.5",
+    "@types/koa__router": "^12.0.0",
+    "@types/koa-bodyparser": "^4.3.10",
     "@types/node": "^18.15.0",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
@@ -59,6 +61,7 @@
   },
   "dependencies": {
     "@koa/cors": "^4.0.0",
+    "@koa/router": "^12.0.0",
     "@mui/base": "^5.0.0-alpha.120",
     "@reduxjs/toolkit": "^1.9.3",
     "@xstate/react": "^3.2.1",
@@ -67,7 +70,6 @@
     "dotenv": "^16.0.3",
     "jsonwebtoken": "^9.0.0",
     "koa-bodyparser": "^4.3.0",
-    "koa-router": "^12.0.0",
     "mongoose": "^7.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -82,4 +84,3 @@
     "zod-error": "^1.5.0"
   }
 }
-

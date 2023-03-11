@@ -23,5 +23,4 @@ const userSchema = new Schema<IUser>({
   await Membership.deleteMany({user: document._id})
 });
 
-
 export const User = model<IUser>('User', userSchema);

@@ -2,13 +2,13 @@ import koa from 'koa';
 import cors from '@koa/cors';
 import { dbConnect } from './db/db-connect';
 import bodyParser from 'koa-bodyparser';
-import Router from 'koa-router';
+import Router from '@koa/router';
 import { hashSync, compareSync } from 'bcryptjs';
 import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, getMembers, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
+import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
 
@@ -97,7 +97,7 @@ router
       ctx.response.body = res;
     } catch (error) {
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown Error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown Error';
     }
   })
   .post('/login', async (ctx) => {
@@ -126,7 +126,8 @@ router
           res = {
             status: 'LOGGEDIN',
             email,
-            token
+            token,
+            userId: user._id.toString()
           };
         } else {
           res = {
@@ -144,7 +145,7 @@ router
       ctx.response.body = res;
     } catch (error) {
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     }
   })
   .post('/free', async (ctx) => {
@@ -181,16 +182,16 @@ router.post("/createOrganization", async (ctx) => {
     }
     catch(error){
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Organization already exists!"};
     }
   }
   catch(error){
     ctx.response.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     try{
       const message = JSON.parse(error.message)[0].message;
-      ctx.response.body = {message: message};
+      ctx.response.body = { message };
     }
     catch(error){
       ctx.response.body = {message: "Invalid input"};
@@ -200,10 +201,11 @@ router.post("/createOrganization", async (ctx) => {
 })
 
 router.get("/getOrganizations", async (ctx) => {
-  try{
-    const {email} = EmailRequest.parse(ctx.query);
-    try{
-      const user = await User.findOne({email: email});
+  try {
+    const { email } = EmailRequest.parse(ctx.query);
+    try {
+      const user = await User.findOne({ email });
+      //TODO: а если не найдет пользователя?
       const id = user._id;
       const organizations = await Membership.aggregate([
         { $match: { user: id } },
@@ -217,32 +219,31 @@ router.get("/getOrganizations", async (ctx) => {
       ctx.status = 200;
 
       ctx.response.body = {
-        organizations: organizations
+        organizations
       };
     }
-    catch(error){
+    catch (error) {
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
     ctx.response.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
-    try{
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+    try {
       const message = JSON.parse(error.message)[0].message;
-      ctx.response.body = {message: message};
+      ctx.response.body = { message };
     }
     catch(error){
       ctx.response.body = {message: "Invalid input"};
     }
-  }
-  
+  }  
 })
 
 router.get("/getUsers", async (ctx) => {
   try{
-    const {org} = getMembers.parse(ctx.query);
+    const { org } = GetMembersRequest.parse(ctx.query);
     const torg = new mongoose.Types.ObjectId(org);
     try{
       const users = await Membership.aggregate([
@@ -266,21 +267,21 @@ router.get("/getUsers", async (ctx) => {
       ]);
       ctx.status = 200;
       ctx.response.body = {
-        users: users
+        users
       };
     }
     catch(error){
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
     ctx.response.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     try{
       const message = JSON.parse(error.message)[0].message;
-      ctx.response.body = {message: message};
+      ctx.response.body = { message };
     }
     catch(error){
       ctx.response.body = {message: "Invalid input"};
@@ -303,13 +304,13 @@ router.delete("/deleteMembership", async (ctx) => {
     }
     catch(error){
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
     ctx.response.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     try{
       const message = JSON.parse(error.message)[0].message;
       ctx.response.body = {message: message};
@@ -327,12 +328,13 @@ router.post("/addMembership", async (ctx) => {
     try{
       const user = await User.findOne({email: email});
       const user_id = user._id;
-      const org_id = new mongoose.Types.ObjectId(ctx.query.org);
+      const org_id = new mongoose.Types.ObjectId(ctx.params.org);
       await Membership.findOneAndDelete({user: user_id, organization: org_id});
       const membership = new Membership({
         user: user_id,
         organization: org_id,
-        role: ctx.request.body.role
+        //TODO: должно быть в валидаторе!
+        role: (ctx.request.body as any).role 
       });
       
       await membership.save();
@@ -343,13 +345,13 @@ router.post("/addMembership", async (ctx) => {
     }
     catch(error){
       ctx.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "No such user!"};
     }
   }
   catch(error){
     ctx.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     ctx.response.body = {message: "Internal error"};
     try{
       const message = JSON.parse(error.message)[0].message;
@@ -376,16 +378,16 @@ router.put("/updateMembership", async (ctx) => {
     }
     catch(error){
       ctx.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
     ctx.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     try{
       const message = JSON.parse(error.message)[0].message;
-      ctx.response.body = {message: message};
+      ctx.response.body = { message };
     }
     catch(error){
       ctx.response.body = {message: "Invalid input"};
@@ -398,7 +400,7 @@ router.delete("/deleteProfile", async (ctx) => {
   try{
     const {email} = EmailRequest.parse(ctx.query);
     try{
-      await User.findOneAndDelete({email: email});
+      await User.findOneAndDelete({ email });
       ctx.status = 200;
       ctx.response.body = {
         status: "Profile deleted!"
@@ -406,13 +408,13 @@ router.delete("/deleteProfile", async (ctx) => {
     }
     catch(error){
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
     ctx.response.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     try{
       const message = JSON.parse(error.message)[0].message;
       ctx.response.body = {message: message};
@@ -437,13 +439,13 @@ router.delete("/leaveOrganization", async (ctx) => {
     }
     catch(error){
       ctx.response.status = 500;
-      ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+      ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
       ctx.response.body = {message: "Internal error"};
     }
   }
   catch(error){
     ctx.response.status = 500;
-    ctx.response.statusText = error instanceof Error ? error.message : 'Unknown error';
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
     try{
       const message = JSON.parse(error.message)[0].message;
       ctx.response.body = {message: message};

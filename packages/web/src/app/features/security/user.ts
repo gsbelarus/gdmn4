@@ -4,6 +4,7 @@ import type { PayloadAction } from '@reduxjs/toolkit'
 export interface UserState {
   email?: string;
   token?: string;
+  userId?: string;
 };
 
 const initialState: UserState = { };
@@ -13,10 +14,7 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     logOff: () => ({}),
-    logIn: (_, action: PayloadAction<{ email: string, token?: string }>) => ({
-      email: action.payload.email,
-      token: action.payload.token
-    })
+    logIn: (_, action: PayloadAction<UserState>) => ({ ...action.payload })
   }
 });
 

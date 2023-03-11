@@ -42,7 +42,8 @@ export type TLoginRequest = z.infer<typeof LoginRequest>;
 export const LoginResponse = z.object({
   status: LoginStatus,
   email: z.string().email(),
-  token: z.string().optional()
+  token: z.string().optional(),
+  userId: z.string().optional()
 });
 
 export type TLoginResponse = z.infer<typeof LoginResponse>;
@@ -66,7 +67,7 @@ export const DeleteMemberRequest = z.object({
   org: z.string()
 })
 
-export const getMembers = z.object({
+export const GetMembersRequest = z.object({
   org: z.string()
 })
 
