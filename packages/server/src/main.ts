@@ -326,7 +326,8 @@ router.post("/addMembership", async (ctx) => {
   try{
     const {email} = EmailRequest.parse(ctx.request.body);
     try{
-      const user = await User.findOne({email: email});
+      const user = await User.findOne({ email });
+      //TODO: what if a user is not found?
       const user_id = user._id;
       const org_id = new mongoose.Types.ObjectId(ctx.params.org);
       await Membership.findOneAndDelete({user: user_id, organization: org_id});
