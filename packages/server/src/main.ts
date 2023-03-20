@@ -8,7 +8,7 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
+import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
 
@@ -425,7 +425,7 @@ router.delete("/deleteProfile", async (ctx) => {
     }
   }
   
-})
+});
 
 router.delete("/leaveOrganization", async (ctx) => {
   try{
@@ -455,7 +455,15 @@ router.delete("/leaveOrganization", async (ctx) => {
       ctx.response.body = {message: "Invalid input"};
     }
   }
-})
+});
+
+/**
+ * Возвращает все сообщения для чата по заданному ИД пользователя
+ * и ИД чата.
+ */
+router.get('/chatMessages', async (ctx) => {
+  const { userId, chatId } = GetChatMessagesRequest.parse(ctx.request.query);
+});
 
 app
   .use(router.routes())
