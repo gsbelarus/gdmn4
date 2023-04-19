@@ -8,9 +8,10 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
+import {CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
+import { Chat, ChatMessage } from './db/chatModel';
 
 dbConnect();
 
@@ -23,7 +24,7 @@ app.use(cors());
 app.use(bodyParser());
 
 app.use(async (ctx, next) => {
-  ctx.set("Access-Control-Allow-Origin", "*");
+  ctx.set("Access-Control-Allow-Origin", "http://localhost:4200");
   ctx.set(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization"
@@ -32,6 +33,7 @@ app.use(async (ctx, next) => {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, PATCH, OPTIONS"
   );
+  ctx.set("Access-Control-Allow-Credentials", "true");
   await next();
 });
 
@@ -462,8 +464,73 @@ router.delete("/leaveOrganization", async (ctx) => {
  * и ИД чата.
  */
 router.get('/chatMessages', async (ctx) => {
-  const { userId, chatId } = GetChatMessagesRequest.parse(ctx.request.query);
+  try{
+    const { userId, chatId } = GetChatMessagesRequest.parse(ctx.request.query);
+    const messages = await ChatMessage.find({user: userId, chat: chatId});
+
+    ctx.response.body = {
+      chatMessages: messages.map((mes) => {return{
+        content: mes.text,
+        senderId: mes.user,
+        senderName: mes.who,
+        timeStamp: mes.timeStamp
+      }})
+    };
+  }
+  catch (error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
 });
+
+/**
+ * Создаёт новый чат с заданным ИД пользователя, ИД участников чата
+ * и тэгу чата
+ */
+
+router.post('/createChat', async (ctx) => {
+  try{
+    const {ownerId, participantsIds, tag} = CreateChatRequest.parse(ctx.request.body);
+    const newChat = await Chat.create({
+      owner: ownerId, 
+      participants: participantsIds,
+      tag: tag
+    });
+    ctx.response.body = {
+      res: "Successfully created chat!"
+    }
+  }
+  catch (error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
+});
+
+/**
+ * Создаёт новое сообщение в БД по ИД чата,
+ * содержанию сообщения и ИД пользователя, который
+ * отправил сообщение
+ */
+
+router.post('/createMessage', async (ctx) => {
+  try{
+    const {chatId, text, userId, who} = CreateMessageRequest.parse(ctx.request.body);
+    const newMessage = await ChatMessage.create({
+      chat: chatId,
+      text: text,
+      user: userId,
+      timeStamp: new Date(),
+      who: who
+    });
+    ctx.response.body = {
+      res: "Successfully added message!"
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
+})
 
 app
   .use(router.routes())
