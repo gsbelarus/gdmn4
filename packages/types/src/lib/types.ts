@@ -78,7 +78,6 @@ export const RoleChange = z.object({
 });
 
 export const GetChatMessagesRequest = z.object({
-  userId: z.string(),
   chatId: z.string()
 });
 
@@ -86,13 +85,22 @@ export const CreateChatRequest = z.object({
   ownerId: z.string(), 
   participantsIds: z.array(z.string()), 
   tag: z.string()
-})
+});
 
 export const CreateMessageRequest = z.object({
   chatId: z.string(), 
   text: z.string(), 
   userId: z.string(), 
   who: z.string()
+});
+
+export const GetChatInfoRequest = z.object({
+  id: z.string()
+});
+
+export const AddParticipantRequest = z.object({
+  chatId: z.string(),
+  userId: z.string()
 })
 
 export function types(): string {

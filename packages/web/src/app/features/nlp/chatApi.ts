@@ -12,8 +12,8 @@ export const chatApi = createApi({
   reducerPath: 'nlpChat',
   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:3000', credentials: 'include' }),
   endpoints: (builder) => ({
-    getAllMessages: builder.query<IAllMessagesResponse[], {userId: string | undefined, chatId: string | undefined}>({
-      query: ({userId, chatId}) => `chatMessages?userId=${userId}&chatId=${chatId}`
+    getAllMessages: builder.query<IAllMessagesResponse[], {chatId: string | undefined}>({
+      query: ({chatId}) => `chatMessages?chatId=${chatId}`
     }),
     createChat: builder.mutation<void, {ownerId: string, participantsIds: string[], tag: string}>({
       query: ({ ownerId, participantsIds, tag }) => ({
@@ -28,8 +28,18 @@ export const chatApi = createApi({
           method: 'POST',
           body: { chatId, text, userId, who }
         }),
-    })
+    }),
+    getChat: builder.query<any, string>({
+      query: (id) => `chatInfo?id=${id}`
+    }),
+    addParticipant: builder.mutation<void, {chatId: string, userId: string}>({
+      query: ({chatId, userId}) => ({
+        url: 'addParticipant',
+        method: 'POST',
+        body: {chatId, userId}
+      })
+    }),
   })
 });
 
-export const { useGetAllMessagesQuery, useCreateChatMutation, useCreateMessageMutation } = chatApi;
+export const { useGetAllMessagesQuery, useCreateChatMutation, useCreateMessageMutation, useGetChatQuery, useAddParticipantMutation } = chatApi;

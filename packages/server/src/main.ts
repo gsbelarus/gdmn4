@@ -8,7 +8,7 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
+import {AddParticipantRequest, CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatInfoRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
 import { Chat, ChatMessage } from './db/chatModel';
@@ -20,7 +20,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 const app = new koa();
 
-app.use(cors());
+// app.use(cors(corsOptions));
 app.use(bodyParser());
 
 app.use(async (ctx, next) => {
@@ -465,8 +465,8 @@ router.delete("/leaveOrganization", async (ctx) => {
  */
 router.get('/chatMessages', async (ctx) => {
   try{
-    const { userId, chatId } = GetChatMessagesRequest.parse(ctx.request.query);
-    const messages = await ChatMessage.find({user: userId, chat: chatId});
+    const { chatId } = GetChatMessagesRequest.parse(ctx.request.query);
+    const messages = await ChatMessage.find({chat: chatId});
 
     ctx.response.body = {
       chatMessages: messages.map((mes) => {return{
@@ -530,7 +530,49 @@ router.post('/createMessage', async (ctx) => {
     ctx.status = 500;
     ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
   };
-})
+});
+
+router.get("/chatInfo", async (ctx) => {
+  try{
+    const {id} = GetChatInfoRequest.parse(ctx.request.query);
+    const chatId = new mongoose.Types.ObjectId(id);
+    const chat = await Chat.findById(chatId);
+
+    ctx.response.body= chat
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.post("/addParticipant", async (ctx) => {
+  try{
+    const {chatId, userId} = AddParticipantRequest.parse(ctx.request.body)
+    await Chat.findByIdAndUpdate(new mongoose.Types.ObjectId(chatId), {$addToSet: {participants: userId}});
+    ctx.response.body = {
+      res: "Successfully added participant!"
+    }
+  } 
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.post("/deleteParticipant", async (ctx) => {
+  try{
+    const {chatId, userId} = AddParticipantRequest.parse(ctx.request.body)
+    await Chat.findByIdAndUpdate(new mongoose.Types.ObjectId(chatId), {$pull: {participants: userId}});
+    ctx.response.body = {
+      res: "Successfully deleted participant!"
+    }
+  } 
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
 
 app
   .use(router.routes())

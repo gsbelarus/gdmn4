@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { forwardRef, Fragment, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { NLPDialog } from '@gdmn-cz/types';
+import { useCreateMessageMutation, useGetAllMessagesQuery } from '../../features/nlp/chatApi';
 
 const NLPDialogContainer = styled.div`
   display: grid;
@@ -184,6 +185,7 @@ const NLPInput = styled.textarea`
 export interface ChatViewProps {
   nlpDialog: NLPDialog;
   push: (who: string, text: string) => void;
+  info: {userId: string, chatId: string}
 };
 
 interface IChatInputProps {
@@ -216,7 +218,7 @@ const defState: Omit<IChatViewState, 'prevNLPDialog'> = {
   prevFrac: 0,
 };
 
-export function ChatView({ nlpDialog, push }: ChatViewProps) {
+export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
   const [state, setState] = useState<IChatViewState>({ ...defState, prevNLPDialog: nlpDialog });
 
   const shownItems = useRef<HTMLDivElement[]>([]);
@@ -225,12 +227,18 @@ export function ChatView({ nlpDialog, push }: ChatViewProps) {
 
   const { showFrom, showTo, scrollTimer, prevClientY, prevFrac, recalc, partialOK, prevNLPDialog } = state;
 
+  // fetch all messages every X seconds
+  const {data: messages, isLoading} = useGetAllMessagesQuery({chatId: info.chatId}, {pollingInterval: 1000});
+
   shownItems.current = [];
 
   const ChatInput = forwardRef(({ onInputText }: IChatInputProps, ref) => {
     const [text, setText] = useState('');
     const [prevText, setPrevText] = useState('');
     const ta = useRef<HTMLTextAreaElement | null>(null);
+
+    // send message (add message to DB)
+    const [addMessage] = useCreateMessageMutation();
 
     useImperativeHandle(ref, () => ({
       setTextAndFocus: (text: string) => {
@@ -243,6 +251,8 @@ export function ChatView({ nlpDialog, push }: ChatViewProps) {
       const trimText = text.trim();
 
       if (e.key === 'Enter' && !e.shiftKey && trimText) {
+        //addMessage({chatId: info.chatId, text: trimText, userId: info.userId, who: ""});
+        console.log({chatId: info.chatId, text: trimText, userId: info.userId, who: ""})
         setText('');
         setPrevText(trimText);
         onInputText(trimText);
