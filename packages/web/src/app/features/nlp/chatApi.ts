@@ -1,11 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 interface IAllMessagesResponse {
+  id: string,
   content: string,
-  senderId: number,
+  senderId: string,
   senderName: string,
   timeStamp: string
 };
+
+export type Message = IAllMessagesResponse;
 
 
 export const chatApi = createApi({

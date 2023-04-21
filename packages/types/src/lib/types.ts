@@ -71,6 +71,14 @@ export const GetMembersRequest = z.object({
   org: z.string()
 });
 
+export const GetProfileRequest = z.object({
+  email: z.string().email()
+});
+
+export const changeProfileUsername = z.object({
+  userName: z.string()
+});
+
 export const RoleChange = z.object({
   user: z.string(),
   role: z.string(),

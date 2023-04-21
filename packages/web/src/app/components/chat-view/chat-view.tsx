@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { forwardRef, Fragment, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, Fragment, useCallback, useEffect, useImperativeHandle, useRef, useState, memo } from 'react';
 import { NLPDialog } from '@gdmn-cz/types';
-import { useCreateMessageMutation, useGetAllMessagesQuery } from '../../features/nlp/chatApi';
+import { Message, useCreateMessageMutation, useGetAllMessagesQuery } from '../../features/nlp/chatApi';
 
 const NLPDialogContainer = styled.div`
   display: grid;
@@ -185,7 +185,7 @@ const NLPInput = styled.textarea`
 export interface ChatViewProps {
   nlpDialog: NLPDialog;
   push: (who: string, text: string) => void;
-  info: {userId: string, chatId: string}
+  info: {user: any, chatId: string}
 };
 
 interface IChatInputProps {
@@ -219,6 +219,7 @@ const defState: Omit<IChatViewState, 'prevNLPDialog'> = {
 };
 
 export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
+  console.log("Updated!");
   const [state, setState] = useState<IChatViewState>({ ...defState, prevNLPDialog: nlpDialog });
 
   const shownItems = useRef<HTMLDivElement[]>([]);
@@ -228,7 +229,7 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
   const { showFrom, showTo, scrollTimer, prevClientY, prevFrac, recalc, partialOK, prevNLPDialog } = state;
 
   // fetch all messages every X seconds
-  const {data: messages, isLoading} = useGetAllMessagesQuery({chatId: info.chatId}, {pollingInterval: 1000});
+  const {data: messages, refetch, isLoading} = useGetAllMessagesQuery({chatId: info.chatId});
 
   shownItems.current = [];
 
@@ -251,8 +252,11 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
       const trimText = text.trim();
 
       if (e.key === 'Enter' && !e.shiftKey && trimText) {
-        //addMessage({chatId: info.chatId, text: trimText, userId: info.userId, who: ""});
-        console.log({chatId: info.chatId, text: trimText, userId: info.userId, who: ""})
+        addMessage({chatId: info.chatId, text: trimText, userId: info.user.userId, 
+          who: info.user.userName? info.user.userName : "who"}).unwrap()
+        .then(() => {
+          console.log("New message added!")
+          refetch()}); 
         setText('');
         setPrevText(trimText);
         onInputText(trimText);
@@ -528,7 +532,7 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
       <NLPDialogContainer>
         <NLPItems>
           <NLPItemsFlex onWheel={onWheel}>
-            {nlpDialog.map(
+            {/* {nlpDialog.map(
               (i, idx) =>
                 idx >= sf &&
                   idx <= st && (
@@ -556,7 +560,33 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
                     }
                   </NLPItem>
                 )
-            )}
+            )} */}
+            {
+              !isLoading && messages?.map((mes: Message) => (
+                <NLPItem 
+                  key={mes.id}
+                  style={ mes.senderId === info.user.userId ? { textAlign: 'right', paddingRight: 12 } : { textAlign: 'left' } }
+                  ref={elem => elem && shownItems.current.push(elem)}
+                  onClick={() => {
+                    if (inputRef.current) {
+                      (inputRef.current as any).setTextAndFocus(mes.content);
+                    }
+                  }}>
+                  {
+                      mes.senderId === info.user.userId ?
+                        <>
+                          <span className="Message MessageRight">{mes.content}</span>
+                          <span className="Circle">{mes.senderName}</span>
+                        </>
+                        :
+                        <>
+                          <span className="Circle">{mes.senderName}</span>
+                          <span className="Message MessageLeft">{mes.content}</span>
+                        </>
+                    }
+                </NLPItem>
+              ))
+            }
             <div
               className={state.scrollVisible ? 'NLPScrollBarVisible' : 'NLPScrollBar'}
               onPointerDown={onPointerDown}

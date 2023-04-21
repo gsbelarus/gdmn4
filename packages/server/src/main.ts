@@ -8,7 +8,7 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {AddParticipantRequest, CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatInfoRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
+import {AddParticipantRequest, CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatInfoRequest, GetChatMessagesRequest, GetMembersRequest, GetProfileRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse, changeProfileUsername } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
 import { Chat, ChatMessage } from './db/chatModel';
@@ -365,7 +365,7 @@ router.post("/addMembership", async (ctx) => {
     }
   }
   
-})
+});
 
 router.put("/updateMembership", async (ctx) => {
   try{
@@ -397,7 +397,7 @@ router.put("/updateMembership", async (ctx) => {
     }
   }
   
-})
+});
 
 router.delete("/deleteProfile", async (ctx) => {
   try{
@@ -468,14 +468,13 @@ router.get('/chatMessages', async (ctx) => {
     const { chatId } = GetChatMessagesRequest.parse(ctx.request.query);
     const messages = await ChatMessage.find({chat: chatId});
 
-    ctx.response.body = {
-      chatMessages: messages.map((mes) => {return{
+    ctx.response.body = messages.map((mes) => {return{
+        id: mes._id,
         content: mes.text,
         senderId: mes.user,
         senderName: mes.who,
         timeStamp: mes.timeStamp
-      }})
-    };
+      }});
   }
   catch (error){
     ctx.status = 500;
@@ -573,6 +572,33 @@ router.post("/deleteParticipant", async (ctx) => {
     ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
   }
 });
+
+router.get("/getProfile", async (ctx) => {
+  try{
+    const {email} = GetProfileRequest.parse(ctx.request.query);
+    const profileInfo = await User.findOne({email: email});
+    ctx.response.body = profileInfo;
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.post("/changeUsername", async (ctx) => {
+  try{
+    const {email} = GetProfileRequest.parse(ctx.request.query);
+    const {userName} = changeProfileUsername.parse(ctx.request.body)
+    await User.findOneAndUpdate({email: email}, {$set: {userName: userName}});
+    ctx.response.body = {
+      res: "Successfully changed userName!"
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+})
 
 app
   .use(router.routes())

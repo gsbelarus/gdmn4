@@ -5,6 +5,7 @@ export interface UserState {
   email?: string;
   token?: string;
   userId?: string;
+  userName?: string;
 };
 
 const initialState: UserState = { };
