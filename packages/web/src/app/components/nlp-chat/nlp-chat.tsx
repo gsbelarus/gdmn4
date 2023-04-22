@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { useState } from "react";
 import { useAddParticipantMutation, useGetAllMessagesQuery, useGetChatQuery } from "../../features/nlp/chatApi";
 import { pushNLPDialogItem } from "../../features/nlp/nlpSlice";
 import { useAppDispatch, useAppSelector } from "../../store";
@@ -14,30 +14,27 @@ import styled from "styled-components";
 //   }
 // `;
 
-
-
 export const NlpChat = () => {
   const user = useAppSelector( state => state.user );
   const nlpDialog = useAppSelector( state => state.nlp.nlpDialog );
   const chatId = "643fa9a6de97df38268d11fe" // temporal measure
-  const dispatch = useAppDispatch();
 
   const {data: chatInfo, isLoading} = useGetChatQuery(chatId);
   const [addParticipant] = useAddParticipantMutation();
-  const [particId, setParticId] = useState("");
+  const [participantId, setParticipantId] = useState("");
 
   const handleAddParticipant = () => {
-    addParticipant({userId: particId, chatId: chatId})
+    addParticipant({userId: participantId, chatId: chatId})
   }
 
-  // need to show this messages in ChatView
+
   return (
     !isLoading && user.userId &&
     <>
       {/* {
         (chatInfo?.owner === userId) && 
         <div>
-          <Input onChange={e => setParticId(e.target.value)}/>
+          <Input onChange={e => setParticipantId(e.target.value)}/>
           <Button onClick={handleAddParticipant}>Add participant</Button>
         </div>
         
@@ -45,11 +42,7 @@ export const NlpChat = () => {
       {chatInfo?.participants.includes(user.userId) && 
       <>
         <h3>{chatInfo.tag}</h3>
-        <ChatView nlpDialog={nlpDialog} push={ 
-        (who, text) => {
-          dispatch(pushNLPDialogItem({ who, text }));
-        }
-      } info={{chatId:  chatId, user: user}}/>
+        <ChatView nlpDialog={nlpDialog} info={{chatId: chatId, user: user}}/>
       </>
       }
     </>

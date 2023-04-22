@@ -1,5 +1,6 @@
 import styled from 'styled-components';
-import { forwardRef, Fragment, useCallback, useEffect, useImperativeHandle, useRef, useState, memo } from 'react';
+import { forwardRef, Fragment, useCallback, useEffect, useImperativeHandle, useRef, useState, memo, useMemo } from 'react';
+import React from 'react';
 import { NLPDialog } from '@gdmn-cz/types';
 import { Message, useCreateMessageMutation, useGetAllMessagesQuery } from '../../features/nlp/chatApi';
 
@@ -184,7 +185,7 @@ const NLPInput = styled.textarea`
 /* eslint-disable-next-line */
 export interface ChatViewProps {
   nlpDialog: NLPDialog;
-  push: (who: string, text: string) => void;
+  // push: (who: string, text: string) => void;
   info: {user: any, chatId: string}
 };
 
@@ -218,8 +219,8 @@ const defState: Omit<IChatViewState, 'prevNLPDialog'> = {
   prevFrac: 0,
 };
 
-export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
-  console.log("Updated!");
+export const ChatView = ({ nlpDialog, info }: ChatViewProps) => {
+  console.log("Rendered chatView")
   const [state, setState] = useState<IChatViewState>({ ...defState, prevNLPDialog: nlpDialog });
 
   const shownItems = useRef<HTMLDivElement[]>([]);
@@ -229,11 +230,12 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
   const { showFrom, showTo, scrollTimer, prevClientY, prevFrac, recalc, partialOK, prevNLPDialog } = state;
 
   // fetch all messages every X seconds
-  const {data: messages, refetch, isLoading} = useGetAllMessagesQuery({chatId: info.chatId});
+  const {data: messages, refetch, isLoading} = useGetAllMessagesQuery({chatId: info.chatId}, {pollingInterval: 2000});
 
   shownItems.current = [];
 
-  const ChatInput = forwardRef(({ onInputText }: IChatInputProps, ref) => {
+  const ChatInput = forwardRef((props, ref) => {
+    console.log("Rendered!");
     const [text, setText] = useState('');
     const [prevText, setPrevText] = useState('');
     const ta = useRef<HTMLTextAreaElement | null>(null);
@@ -259,7 +261,7 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
           refetch()}); 
         setText('');
         setPrevText(trimText);
-        onInputText(trimText);
+        // onInputText(trimText);
         e.preventDefault();
       }
     }, [text, prevText]);
@@ -286,6 +288,8 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
       />
     );
   });
+
+  const ChatInputMemo = useMemo(() => <ChatInput ref={inputRef} />, []);
 
   useEffect(() => {
     if (recalc || nlpDialog !== prevNLPDialog) {
@@ -510,17 +514,6 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
     }
   }, [nlpDialog, showFrom, showTo, prevClientY, prevFrac]);
 
-  const onInputText = useCallback((text: string) => {
-    setState(state => ({
-      ...state,
-      showFrom: -1,
-      showTo: -1,
-      partialOK: true,
-      recalc: true
-    }));
-    push('me', text);
-  }, [nlpDialog]);
-
   const sf = (showFrom === -1 && nlpDialog.length) ? nlpDialog.length - 1 : showFrom;
   const st = (showTo === -1 && nlpDialog.length) ? nlpDialog.length - 1 : showTo;
 
@@ -532,35 +525,6 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
       <NLPDialogContainer>
         <NLPItems>
           <NLPItemsFlex onWheel={onWheel}>
-            {/* {nlpDialog.map(
-              (i, idx) =>
-                idx >= sf &&
-                  idx <= st && (
-                  <NLPItem
-                    key={i.id}
-                    style={ i.who === 'me' ? { textAlign: 'right', paddingRight: 12 } : { textAlign: 'left' } }
-                    ref={elem => elem && shownItems.current.push(elem)}
-                    onClick={() => {
-                      if (inputRef.current) {
-                        (inputRef.current as any).setTextAndFocus(i.text);
-                      }
-                    }}
-                  >
-                    {
-                      i.who === 'me' ?
-                        <>
-                          <span className="Message MessageRight">{i.text}</span>
-                          <span className="Circle">{i.who}</span>
-                        </>
-                        :
-                        <>
-                          <span className="Circle">{i.who}</span>
-                          <span className="Message MessageLeft">{i.text}</span>
-                        </>
-                    }
-                  </NLPItem>
-                )
-            )} */}
             {
               !isLoading && messages?.map((mes: Message) => (
                 <NLPItem 
@@ -601,7 +565,7 @@ export function ChatView({ nlpDialog, push, info }: ChatViewProps) {
             </div>
           </NLPItemsFlex>
         </NLPItems>
-        <ChatInput onInputText={onInputText} ref={inputRef} />
+        {ChatInputMemo}
       </NLPDialogContainer>
       <svg height="0" width="0">
         <defs>
