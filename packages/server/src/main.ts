@@ -8,9 +8,10 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatMessagesRequest, GetMembersRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse } from '@gdmn-cz/types';
+import {AddParticipantRequest, CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatInfoRequest, GetChatMessagesRequest, GetMembersRequest, GetProfileRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse, changeProfileUsername } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
+import { Chat, ChatMessage } from './db/chatModel';
 
 dbConnect();
 
@@ -19,11 +20,11 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 const app = new koa();
 
-app.use(cors());
+// app.use(cors(corsOptions));
 app.use(bodyParser());
 
 app.use(async (ctx, next) => {
-  ctx.set("Access-Control-Allow-Origin", "*");
+  ctx.set("Access-Control-Allow-Origin", "http://localhost:4200");
   ctx.set(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization"
@@ -32,6 +33,7 @@ app.use(async (ctx, next) => {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, PATCH, OPTIONS"
   );
+  ctx.set("Access-Control-Allow-Credentials", "true");
   await next();
 });
 
@@ -363,7 +365,7 @@ router.post("/addMembership", async (ctx) => {
     }
   }
   
-})
+});
 
 router.put("/updateMembership", async (ctx) => {
   try{
@@ -395,7 +397,7 @@ router.put("/updateMembership", async (ctx) => {
     }
   }
   
-})
+});
 
 router.delete("/deleteProfile", async (ctx) => {
   try{
@@ -462,8 +464,141 @@ router.delete("/leaveOrganization", async (ctx) => {
  * и ИД чата.
  */
 router.get('/chatMessages', async (ctx) => {
-  const { userId, chatId } = GetChatMessagesRequest.parse(ctx.request.query);
+  try{
+    const { chatId } = GetChatMessagesRequest.parse(ctx.request.query);
+    const messages = await ChatMessage.find({chat: chatId});
+
+    ctx.response.body = messages.map((mes) => {return{
+        id: mes._id,
+        content: mes.text,
+        senderId: mes.user,
+        senderName: mes.who,
+        timeStamp: mes.timeStamp
+      }});
+  }
+  catch (error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
 });
+
+/**
+ * Создаёт новый чат с заданным ИД пользователя, ИД участников чата
+ * и тэгу чата
+ */
+
+router.post('/createChat', async (ctx) => {
+  try{
+    const {ownerId, participantsIds, tag} = CreateChatRequest.parse(ctx.request.body);
+    const newChat = await Chat.create({
+      owner: ownerId, 
+      participants: participantsIds,
+      tag: tag
+    });
+    ctx.response.body = {
+      res: "Successfully created chat!"
+    }
+  }
+  catch (error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
+});
+
+/**
+ * Создаёт новое сообщение в БД по ИД чата,
+ * содержанию сообщения и ИД пользователя, который
+ * отправил сообщение
+ */
+
+router.post('/createMessage', async (ctx) => {
+  try{
+    const {chatId, text, userId, who} = CreateMessageRequest.parse(ctx.request.body);
+    const newMessage = await ChatMessage.create({
+      chat: chatId,
+      text: text,
+      user: userId,
+      timeStamp: new Date(),
+      who: who
+    });
+    ctx.response.body = {
+      res: "Successfully added message!"
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
+});
+
+router.get("/chatInfo", async (ctx) => {
+  try{
+    const {id} = GetChatInfoRequest.parse(ctx.request.query);
+    const chatId = new mongoose.Types.ObjectId(id);
+    const chat = await Chat.findById(chatId);
+
+    ctx.response.body= chat
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.post("/addParticipant", async (ctx) => {
+  try{
+    const {chatId, userId} = AddParticipantRequest.parse(ctx.request.body)
+    await Chat.findByIdAndUpdate(new mongoose.Types.ObjectId(chatId), {$addToSet: {participants: userId}});
+    ctx.response.body = {
+      res: "Successfully added participant!"
+    }
+  } 
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.post("/deleteParticipant", async (ctx) => {
+  try{
+    const {chatId, userId} = AddParticipantRequest.parse(ctx.request.body)
+    await Chat.findByIdAndUpdate(new mongoose.Types.ObjectId(chatId), {$pull: {participants: userId}});
+    ctx.response.body = {
+      res: "Successfully deleted participant!"
+    }
+  } 
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.get("/getProfile", async (ctx) => {
+  try{
+    const {email} = GetProfileRequest.parse(ctx.request.query);
+    const profileInfo = await User.findOne({email: email});
+    ctx.response.body = profileInfo;
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+});
+
+router.post("/changeUsername", async (ctx) => {
+  try{
+    const {email} = GetProfileRequest.parse(ctx.request.query);
+    const {userName} = changeProfileUsername.parse(ctx.request.body)
+    await User.findOneAndUpdate({email: email}, {$set: {userName: userName}});
+    ctx.response.body = {
+      res: "Successfully changed userName!"
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  }
+})
 
 app
   .use(router.routes())

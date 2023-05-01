@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store';
 import { logOff } from '../../features/security/user';
 import { Table } from '../table/table';
-import { useCreateOrganizationMutation, useDeleteProfileMutation, useGetOrganizationsQuery, useLeaveOrganizationMutation } from '../../profile-api';
+import { useChangeUsernameMutation, useCreateOrganizationMutation, useDeleteProfileMutation, useGetOrganizationsQuery, useGetProfileQuery, useLeaveOrganizationMutation } from '../../profile-api';
 
 const Container = styled.div`
   max-width: 800px;
@@ -23,6 +23,12 @@ const Avatar = styled.img`
 `;
 
 const Email = styled.h1`
+  font-size: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+`;
+
+const UserName = styled.h1`
   font-size: 2rem;
   margin-top: 0.5rem;
   margin-bottom: 0;
@@ -66,13 +72,16 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
 
   const [err, setErr] = useState("");
   const [name, setName] = useState("");
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const {data: body, isSuccess, refetch} = useGetOrganizationsQuery(email, {refetchOnMountOrArgChange: true, pollingInterval: 30000});
+  const {data: profileInfo, isLoading, refetch: refetch2} = useGetProfileQuery(email);
   const [createOrganization] = useCreateOrganizationMutation();
   const [leaveOrganization] = useLeaveOrganizationMutation();
   const [deleteProfile] = useDeleteProfileMutation();
+  const [changeUsername] = useChangeUsernameMutation();
 
   const handleCreateOrganization = () => {
     createOrganization({name: name, email: email}).unwrap()
@@ -101,13 +110,21 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
     .catch((error) => console.error(error));
   }
 
+  const handleChangeUsername = () => {
+    changeUsername({email: email, userName: userName}).unwrap()
+    .then(() => {
+      setUserName("");
+      refetch2()})
+    .catch((error) => console.error(error))
+  }
+
   return (
     <Page>
-      <div>
+      {!isLoading && <div>
         <Container>
         <Avatar src={avatarUrl} />
         <Email>{email}</Email>
-        <Bio>This is a user</Bio>
+        <UserName>{profileInfo.userName}</UserName>
         <Button onClick={handleDeleteProfile}>Delete profile!</Button>
         </Container>
         <Create>
@@ -116,7 +133,13 @@ export const Profile: React.FC<Props> = ({ email, bio = "", avatarUrl }) => {
           <ErrorSpan className='error'>{err}</ErrorSpan>
           <Button onClick={handleCreateOrganization}>Create</Button>
         </Create>
-      </div>
+        <Create>
+          <span>Change username</span>
+          <Input value={userName} id="userName" onChange={e => setUserName(e.target.value)}/>
+          <ErrorSpan className='error'>{err}</ErrorSpan>
+          <Button onClick={handleChangeUsername}>Change</Button>
+        </Create>
+      </div>}
       <div>
         {
           isSuccess === false? "" : 

@@ -71,6 +71,14 @@ export const GetMembersRequest = z.object({
   org: z.string()
 });
 
+export const GetProfileRequest = z.object({
+  email: z.string().email()
+});
+
+export const changeProfileUsername = z.object({
+  userName: z.string()
+});
+
 export const RoleChange = z.object({
   user: z.string(),
   role: z.string(),
@@ -78,9 +86,30 @@ export const RoleChange = z.object({
 });
 
 export const GetChatMessagesRequest = z.object({
-  userId: z.string(),
   chatId: z.string()
 });
+
+export const CreateChatRequest = z.object({
+  ownerId: z.string(), 
+  participantsIds: z.array(z.string()), 
+  tag: z.string()
+});
+
+export const CreateMessageRequest = z.object({
+  chatId: z.string(), 
+  text: z.string(), 
+  userId: z.string(), 
+  who: z.string()
+});
+
+export const GetChatInfoRequest = z.object({
+  id: z.string()
+});
+
+export const AddParticipantRequest = z.object({
+  chatId: z.string(),
+  userId: z.string()
+})
 
 export function types(): string {
   return 'types';

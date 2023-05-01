@@ -96,12 +96,9 @@ export const App = () => {
             </Link>
             {
               email ?
-              <>
                 <div>
                   Welcome <Link to="/profile"><span>{email}</span></Link>! <span onClick={ handleLogoff }>Logoff</span> 
-                </div>
-              </>
-              
+                </div>           
               :
               null
             }

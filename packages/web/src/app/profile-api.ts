@@ -28,7 +28,19 @@ export const api3 = createApi({
                 method: 'DELETE',
             })
         })),
+        getProfile: (builder.query<any, string>({
+            query: (email) => `getProfile?email=${email}`,
+        })),
+        changeUsername: (builder.mutation<void, {email: string, userName: string}>({
+            query: ({email, userName}) => ({
+                url: `changeUsername?email=${email}`,
+                method: 'POST',
+                body: {userName}
+            })
+        })), 
     }),
 });
 
-export const {useGetOrganizationsQuery, useCreateOrganizationMutation, useLeaveOrganizationMutation, useDeleteProfileMutation} = api3;
+export const {useGetOrganizationsQuery, useCreateOrganizationMutation, 
+    useLeaveOrganizationMutation, useDeleteProfileMutation,
+    useGetProfileQuery, useChangeUsernameMutation} = api3;
