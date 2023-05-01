@@ -8,6 +8,7 @@ import { createMachine } from "xstate";
 import { useMachine } from "@xstate/react";
 import { assign } from "xstate/lib/actions";
 import { ftch2 } from "../../api";
+import { useCreateChatMutation } from "../../features/nlp/chatApi";
 
 const Container = styled.div`
   display: flex;
@@ -366,7 +367,7 @@ export const Login = () => {
           <Button 
             disabled={!valid || state.hasTag('pending')} 
             style={{ maxWidth: 120 }}
-            onClick={ () => send('query') }
+            onClick={ () => send('query')}
           >
             {state.matches('login') ? 'Login' : 'Register'}
           </Button>

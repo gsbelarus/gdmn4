@@ -18,6 +18,8 @@ const ChatSchema = new Schema<IChat>({
   tag: {
     type: Schema.Types.String
   }
+}).post('findOneAndDelete', async (document) => {
+  await ChatMessage.deleteMany({chat: document._id})
 });
 
 export const Chat = model<IChat>('Chat', ChatSchema);

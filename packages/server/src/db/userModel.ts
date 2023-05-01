@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { Membership } from './membershipModel';
+import { ChatMessage } from './chatModel';
 
 interface IUser {
   email: string;
@@ -26,7 +27,8 @@ const userSchema = new Schema<IUser>({
     default: "Anon"
   }
 }).post('findOneAndDelete', async (document) => {
-  await Membership.deleteMany({user: document._id})
+  await Membership.deleteMany({user: document._id});
+  await ChatMessage.deleteMany({owner: document._id})
 });
 
 export const User = model<IUser>('User', userSchema);
