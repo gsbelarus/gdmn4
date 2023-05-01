@@ -8,7 +8,7 @@ import { User } from './db/userModel';
 import { Organization } from './db/organizationModel';
 import { Membership } from './db/membershipModel';
 import jwt from 'jsonwebtoken';
-import {AddParticipantRequest, CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteMemberRequest, EmailRequest, GetChatInfoRequest, GetChatMessagesRequest, GetMembersRequest, GetProfileRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse, changeProfileUsername } from '@gdmn-cz/types';
+import {AddParticipantRequest, CreateChatRequest, CreateMessageRequest, CreateOrganizationRequest, DeleteChat, DeleteMemberRequest, EmailRequest, GetChatInfoRequest, GetChatMessagesRequest, GetMembersRequest, GetProfileRequest, LeaveOrganizationRequest, LoginRequest, RegisterRequest, RoleChange, TRegisterResponse, changeProfileUsername } from '@gdmn-cz/types';
 import type { TLoginResponse } from '@gdmn-cz/types';
 import mongoose from 'mongoose';
 import { Chat, ChatMessage } from './db/chatModel';
@@ -331,7 +331,8 @@ router.post("/addMembership", async (ctx) => {
       const user = await User.findOne({ email });
       //TODO: what if a user is not found?
       const user_id = user._id;
-      const org_id = new mongoose.Types.ObjectId(ctx.params.org);
+      const {org} = GetMembersRequest.parse(ctx.request.query);
+      const org_id = new mongoose.Types.ObjectId(org);
       await Membership.findOneAndDelete({user: user_id, organization: org_id});
       const membership = new Membership({
         user: user_id,
@@ -505,6 +506,20 @@ router.post('/createChat', async (ctx) => {
   };
 });
 
+router.delete('/deleteChat', async (ctx) => {
+  try{
+    const {chatId} = DeleteChat.parse(ctx.request.query);
+    await Chat.findOneAndDelete({_id: chatId});
+    ctx.response.body = {
+      res: "Successfully deleted chat!"
+    }
+  }
+  catch (error){
+    ctx.status = 500;
+    ctx.response.body = error instanceof Error ? error.message : 'Unknown error';
+  };
+});
+
 /**
  * Создаёт новое сообщение в БД по ИД чата,
  * содержанию сообщения и ИД пользователя, который
@@ -534,10 +549,19 @@ router.post('/createMessage', async (ctx) => {
 router.get("/chatInfo", async (ctx) => {
   try{
     const {id} = GetChatInfoRequest.parse(ctx.request.query);
-    const chatId = new mongoose.Types.ObjectId(id);
-    const chat = await Chat.findById(chatId);
+    const ownerId = new mongoose.Types.ObjectId(id);
+    let chat = null;
+    chat = await Chat.findOne({owner: ownerId});
 
-    ctx.response.body= chat
+    if (!chat){
+      const newChat = await Chat.create({
+        owner: ownerId,
+        participants: [ownerId],
+        tag: "default"
+      }); 
+      chat = newChat
+    }
+    ctx.response.body= chat;
   }
   catch(error){
     ctx.status = 500;

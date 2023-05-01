@@ -17,16 +17,15 @@ import styled from "styled-components";
 export const NlpChat = () => {
   const user = useAppSelector( state => state.user );
   const nlpDialog = useAppSelector( state => state.nlp.nlpDialog );
-  const chatId = "643fa9a6de97df38268d11fe" // temporal measure
+  //const chatId = "643fa9a6de97df38268d11fe" // temporal measure
 
-  const {data: chatInfo, isLoading} = useGetChatQuery(chatId);
+  const {data: chatInfo, isLoading} = useGetChatQuery(String(user.userId));
   const [addParticipant] = useAddParticipantMutation();
   const [participantId, setParticipantId] = useState("");
 
   const handleAddParticipant = () => {
-    addParticipant({userId: participantId, chatId: chatId})
+    addParticipant({userId: participantId, chatId: chatInfo._id})
   }
-
 
   return (
     !isLoading && user.userId &&
@@ -39,13 +38,13 @@ export const NlpChat = () => {
         </div>
         
       } */}
-      {chatInfo?.participants.includes(user.userId) && 
-      <>
-        <h3>{chatInfo.tag}</h3>
-        <ChatView nlpDialog={nlpDialog} info={{chatId: chatId, user: user}}/>
-      </>
-      }
-    </>
-      
+      {
+          chatInfo.participants.includes(user.userId) && 
+          <>
+            <h3>{chatInfo.tag}</h3>
+            <ChatView nlpDialog={nlpDialog} info={{chatId: chatInfo._id, user}}/>
+          </>
+        }
+    </>  
   )
 };

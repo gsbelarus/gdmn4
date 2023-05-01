@@ -111,6 +111,10 @@ export const AddParticipantRequest = z.object({
   userId: z.string()
 })
 
+export const DeleteChat = z.object({
+  chatId: z.string()
+})
+
 export function types(): string {
   return 'types';
 };
