@@ -146,6 +146,7 @@ type LoginContext = {
   valid?: boolean;
   status?: TLoginStatus | TRegisterStatus;
   token?: string;
+  userId?: string;
 };
 
 const initialContext: LoginContext = {
@@ -153,7 +154,8 @@ const initialContext: LoginContext = {
   password: '',
   password2: '',
   status: undefined,
-  token: undefined
+  token: undefined,
+  userId: undefined
 }; 
 
 type LoginEvents = 
@@ -214,12 +216,20 @@ const loginMachine = createMachine<LoginContext, LoginEvents>({
             onDone: [
               {
                 target: 'success',
-                cond: (_, event) => event.data?.status === 'LOGGEDIN',
-                actions: assign( (ctx, event) => ({ ...ctx, status: event.data.status, token: event.data.token }) )
+                cond: (_, event) => event.data?.status === 'LOGGEDIN' && event.data?.userId,
+                actions: assign( (ctx, event) => ({ 
+                  ...ctx, 
+                  status: event.data.status, 
+                  token: event.data.token,
+                  userId: event.data.userId 
+                }) )
               },
               {
                 target: 'enterData',
-                actions: assign( (ctx, event) => ({ ...ctx, status: event.data?.status }) )
+                actions: assign( (ctx, event) => ({ 
+                  ...ctx, 
+                  status: event.data?.status === 'LOGGEDIN' ? 'ERROR' : event.data?.status 
+                }) )
               }
             ],
             onError: 'enterData'
@@ -310,7 +320,7 @@ export const Login = () => {
   const dispatch = useAppDispatch();
   const [state, send] = useMachine(loginMachine, { 
     actions: {
-      dispatchLogin: ({ email, token }) => dispatch(logIn({ email, token }))
+      dispatchLogin: ({ email, token, userId }) => dispatch(logIn({ email, token, userId }))
     }
   });
   const { email, password, password2, valid, status } = state.context;
